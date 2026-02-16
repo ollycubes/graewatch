@@ -39,7 +39,7 @@ async def get_candles(
     )
 
     if latest and latest.get("fetched_at"):
-        age = (datetime.now(timezone.utc) - latest["fetched_at"]).total_seconds()
+        age = (datetime.utcnow() - latest["fetched_at"]).total_seconds()
         if age < 3600:  # less than 1 hour old
             cursor = collection.find(
                 {"pair": pair, "interval": interval},
@@ -65,7 +65,7 @@ async def get_candles(
         return {"error": "Failed to fetch data", "detail": data}
 
     # Parse and store in MongoDB
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow()
 
     for item in data["values"]:
         candle_doc = {
