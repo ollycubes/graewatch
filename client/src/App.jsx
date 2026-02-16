@@ -10,12 +10,12 @@ function App() {
 
   return (
     <div style={{
-      backgroundColor: '#0f0f1a',
+      backgroundColor: '#131722',
       minHeight: '100vh',
       padding: '20px',
       fontFamily: 'Arial, sans-serif',
     }}>
-      <h1 style={{ color: '#e0e0e0', marginBottom: '20px' }}>
+      <h1 style={{ color: '#9598a1', marginBottom: '20px' }}>
         Graewatch
       </h1>
 
@@ -25,9 +25,9 @@ function App() {
           onChange={(e) => setPair(e.target.value)}
           style={{
             padding: '8px 12px',
-            backgroundColor: '#1a1a2e',
-            color: '#e0e0e0',
-            border: '1px solid #3a3a4e',
+            backgroundColor: '#1e222d',
+            color: '#9598a1',
+            border: '1px solid #2a2e39',
             borderRadius: '4px',
             fontSize: '14px',
           }}
@@ -42,9 +42,9 @@ function App() {
           onChange={(e) => setInterval(e.target.value)}
           style={{
             padding: '8px 12px',
-            backgroundColor: '#1a1a2e',
-            color: '#e0e0e0',
-            border: '1px solid #3a3a4e',
+            backgroundColor: '#1e222d',
+            color: '#9598a1',
+            border: '1px solid #2a2e39',
             borderRadius: '4px',
             fontSize: '14px',
           }}

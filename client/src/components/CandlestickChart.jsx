@@ -12,12 +12,12 @@ function CandlestickChart({ pair, interval }) {
             width: chartContainerRef.current.clientWidth,
             height: 500,
             layout: {
-                background: { color: '#1a1a2e' },
-                textColor: '#e0e0e0',
+                background: { type: 'solid', color: '#ffffff' },
+                textColor: '#333333',
             },
             grid: {
-                vertLines: { color: '#2a2a3e' },
-                horzLines: { color: '#2a2a3e' },
+                vertLines: { color: '#e0e0e0' },
+                horzLines: { color: '#e0e0e0' },
             },
             crosshair: {
                 mode: 0,
@@ -28,12 +28,12 @@ function CandlestickChart({ pair, interval }) {
         });
 
         const series = chart.addSeries(CandlestickSeries, {
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderDownColor: '#ef5350',
-            borderUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-            wickUpColor: '#26a69a',
+            upColor: '#90bff9',
+            downColor: '#000000',
+            borderUpColor: '#000000',
+            borderDownColor: '#000000',
+            wickUpColor: '#000000',
+            wickDownColor: '#000000',
         });
 
         chartRef.current = chart;
