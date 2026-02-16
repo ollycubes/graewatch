@@ -5,3 +5,4 @@ server/__pycache__/
 *.pyc
 
 client/node_modules/
+client/dist/
