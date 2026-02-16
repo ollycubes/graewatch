@@ -4,28 +4,39 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
+from routes.candles import router as candles_router
+from routes import candles as candles_module
+
 load_dotenv(dotenv_path="../.env")
 
-app = FastAPI() # creating application instance
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # default port vite port
+    allow_origins=["http://localhost:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# tells server to accept reqs from my frontend (otherwise it'll be blocked)
-
 
 # MongoDB connection
 mongo_client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
-db = mongo_client["graewatch"] # default db name for this which is graewatch
+db = mongo_client["graewatch"]
+
+# Give the candles route access to the database
+candles_module.db = db
+
+# Register the route
+app.include_router(candles_router)
+
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok"} # health test
+    return {"status": "ok"}
 
-# Import and include routers
-from server.routes import candles
-candles.db = db # Manual dependency injection as intended by candles.py comments
-app.include_router(candles.router)
+
+@app.on_event("startup")
+async def create_indexes():
+    await db["candles"].create_index(
+        [("pair", 1), ("interval", 1), ("timestamp", 1)],
+        unique=True,
+    )
