@@ -24,3 +24,8 @@ db = mongo_client["graewatch"] # default db name for this which is graewatch
 @app.get("/api/health")
 async def health():
     return {"status": "ok"} # health test
+
+# Import and include routers
+from server.routes import candles
+candles.db = db # Manual dependency injection as intended by candles.py comments
+app.include_router(candles.router)

@@ -6,6 +6,6 @@ Please regularly update this file to record your project progress. You should be
 # Sesssion 1:
 - Project Setup
 - Setup code formatting and linting with eslint and prettier
-- 
+- Removed boilerplate bloat
 
 
