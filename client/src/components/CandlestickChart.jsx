@@ -11,6 +11,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
   const fvgPrimitiveRef = useRef(null);
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
+  const requestVersionRef = useRef(0);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -69,10 +70,23 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
 
   // Fetch and display data when pair or interval changes
   useEffect(() => {
+    const abortController = new AbortController();
+    const requestVersion = ++requestVersionRef.current;
+
     async function fetchData() {
       try {
-        const response = await fetch(`/api/candles?pair=${pair}&interval=${interval}`);
+        const response = await fetch(`/api/candles?pair=${pair}&interval=${interval}`, {
+          signal: abortController.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Candles request failed: ${response.status}`);
+        }
         const data = await response.json();
+
+        // Ignore stale responses from old interval/pair requests.
+        if (requestVersion !== requestVersionRef.current || abortController.signal.aborted) {
+          return;
+        }
 
         if (data.candles && seriesRef.current) {
           const formatted = data.candles.map((c) => ({
@@ -86,17 +100,33 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
           seriesRef.current.setData(formatted);
           chartRef.current.timeScale().fitContent();
 
-          // Fetch BOS and FVG signals in parallel
-          const [bosRes, fvgRes] = await Promise.all([
-            fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`),
-            fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}`),
+          // Fetch BOS and FVG signals in parallel without blocking candle rendering.
+          const [bosResult, fvgResult] = await Promise.allSettled([
+            fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`, {
+              signal: abortController.signal,
+            }),
+            fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}`, {
+              signal: abortController.signal,
+            }),
           ]);
 
-          const bosData = await bosRes.json();
-          const fvgData = await fvgRes.json();
+          if (requestVersion !== requestVersionRef.current || abortController.signal.aborted) {
+            return;
+          }
 
-          bosDataRef.current = bosData.signals || [];
-          fvgDataRef.current = fvgData.signals || [];
+          if (bosResult.status === 'fulfilled' && bosResult.value.ok) {
+            const bosData = await bosResult.value.json();
+            bosDataRef.current = bosData.signals || [];
+          } else {
+            bosDataRef.current = [];
+          }
+
+          if (fvgResult.status === 'fulfilled' && fvgResult.value.ok) {
+            const fvgData = await fvgResult.value.json();
+            fvgDataRef.current = fvgData.signals || [];
+          } else {
+            fvgDataRef.current = [];
+          }
 
           if (bosPrimitiveRef.current) {
             bosPrimitiveRef.current.setLines(showBOS ? bosDataRef.current : []);
@@ -106,11 +136,18 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
           }
         }
       } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
         console.error('Failed to fetch data:', error);
       }
     }
 
     fetchData();
+
+    return () => {
+      abortController.abort();
+    };
   }, [pair, interval]);
 
   // Toggle overlays without re-fetching

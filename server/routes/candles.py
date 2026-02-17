@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime
 import os
+from pymongo import UpdateOne
+
+from routes.intervals import (
+    SUPPORTED_INTERVALS,
+    TWELVE_DATA_INTERVAL_MAP,
+    normalize_interval,
+)
 
 router = APIRouter()
 
@@ -11,14 +18,6 @@ db: AsyncIOMotorDatabase = None
 
 TWELVE_DATA_BASE_URL = "https://api.twelvedata.com/time_series"
 
-# Mapping interval names to Twelve Data's format
-INTERVAL_MAP = {
-    "daily": "1day",
-    "1h": "1h",
-    "4h": "4h",
-    "weekly": "1week",
-}
-
 
 @router.get("/api/candles")
 async def get_candles(
@@ -26,15 +25,21 @@ async def get_candles(
     interval: str = Query("daily", example="daily"),
 ):
     if db is None:
-        from fastapi import HTTPException
         raise HTTPException(status_code=500, detail="Database not initialized")
 
+    normalized_interval = normalize_interval(interval)
+    if normalized_interval is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported interval '{interval}'. Use one of: {list(SUPPORTED_INTERVALS)}",
+        )
+
     collection = db["candles"]
-    td_interval = INTERVAL_MAP.get(interval, "1day")
+    td_interval = TWELVE_DATA_INTERVAL_MAP[normalized_interval]
 
     # Fresh data check in MongoDB
     latest = await collection.find_one(
-        {"pair": pair, "interval": interval},
+        {"pair": pair, "interval": normalized_interval},
         sort=[("fetched_at", -1)],
     )
 
@@ -42,11 +47,17 @@ async def get_candles(
         age = (datetime.utcnow() - latest["fetched_at"]).total_seconds()
         if age < 3600:  # less than 1 hour old
             cursor = collection.find(
-                {"pair": pair, "interval": interval},
+                {"pair": pair, "interval": normalized_interval},
                 {"_id": 0, "pair": 0, "interval": 0, "fetched_at": 0},
             ).sort("timestamp", 1)
             candles = await cursor.to_list(length=5000)
-            return {"source": "cache", "count": len(candles), "candles": candles}
+            return {
+                "source": "cache",
+                "count": len(candles),
+                "pair": pair,
+                "interval": normalized_interval,
+                "candles": candles,
+            }
 
     # Fetch from Twelve Data
     api_key = os.getenv("TWELVE_DATA_API_KEY")
@@ -62,15 +73,16 @@ async def get_candles(
         data = response.json()
 
     if "values" not in data:
-        return {"error": "Failed to fetch data", "detail": data}
+        raise HTTPException(status_code=502, detail={"error": "Failed to fetch data", "provider": data})
 
     # Parse and store in MongoDB
     now = datetime.utcnow()
 
+    ops = []
     for item in data["values"]:
         candle_doc = {
             "pair": pair,
-            "interval": interval,
+            "interval": normalized_interval,
             "timestamp": item["datetime"],
             "open": float(item["open"]),
             "high": float(item["high"]),
@@ -78,22 +90,32 @@ async def get_candles(
             "close": float(item["close"]),
             "fetched_at": now,
         }
-
-        await collection.update_one(
-            {
-                "pair": pair,
-                "interval": interval,
-                "timestamp": item["datetime"],
-            },
-            {"$set": candle_doc},
-            upsert=True,
+        ops.append(
+            UpdateOne(
+                {
+                    "pair": pair,
+                    "interval": normalized_interval,
+                    "timestamp": item["datetime"],
+                },
+                {"$set": candle_doc},
+                upsert=True,
+            )
         )
+
+    if ops:
+        await collection.bulk_write(ops, ordered=False)
 
     # Return the stored data
     cursor = collection.find(
-        {"pair": pair, "interval": interval},
+        {"pair": pair, "interval": normalized_interval},
         {"_id": 0, "pair": 0, "interval": 0, "fetched_at": 0},
     ).sort("timestamp", 1)
     candles = await cursor.to_list(length=5000)
 
-    return {"source": "api", "count": len(candles), "candles": candles}
+    return {
+        "source": "api",
+        "count": len(candles),
+        "pair": pair,
+        "interval": normalized_interval,
+        "candles": candles,
+    }

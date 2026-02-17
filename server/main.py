@@ -46,3 +46,13 @@ async def create_indexes():
         [("pair", 1), ("interval", 1), ("timestamp", 1)],
         unique=True,
     )
+    await db["candles"].create_index(
+        [("pair", 1), ("interval", 1), ("fetched_at", -1)],
+    )
+    await db["analysis"].create_index(
+        [("component", 1), ("pair", 1), ("interval", 1)],
+        unique=True,
+    )
+    await db["analysis"].create_index(
+        [("component", 1), ("pair", 1), ("interval", 1), ("candles_fetched_at", -1)],
+    )
