@@ -45,10 +45,13 @@ class FVGBoxesPaneView {
 
       if (x1 === null || yTop === null || yBottom === null) continue;
 
-      // Extend rectangle to the right edge of visible area
-      let x2;
-      if (visibleRange) {
-        x2 = timeScale.timeToCoordinate(visibleRange.to);
+      // End at mitigation candle, or extend to visible edge if unmitigated
+      let x2 = null;
+      if (fvg.end_timestamp) {
+        x2 = timeScale.timeToCoordinate(fvg.end_timestamp);
+      }
+      if (x2 === null || x2 === undefined) {
+        x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
       }
       if (x2 === null || x2 === undefined) {
         x2 = x1 + 200;

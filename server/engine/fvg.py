@@ -5,7 +5,8 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     Bullish FVG: candle[i-2].high < candle[i].low (gap up)
     Bearish FVG: candle[i-2].low > candle[i].high (gap down)
 
-    Returns the gap zone coordinates for each FVG.
+    Each FVG extends until a later candle's wick enters the gap zone
+    (mitigation), at which point the FVG ends.
     """
     fvg_events = []
 
@@ -16,20 +17,42 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
 
         # Bullish FVG: gap between c1 high and c3 low
         if c1["high"] < c3["low"]:
+            top = c3["low"]
+            bottom = c1["high"]
+
+            # Find when price enters the gap zone (mitigation)
+            end_timestamp = None
+            for j in range(i + 1, len(candles)):
+                if candles[j]["low"] <= top:
+                    end_timestamp = candles[j]["timestamp"]
+                    break
+
             fvg_events.append({
                 "timestamp": c2["timestamp"],
+                "end_timestamp": end_timestamp,
                 "direction": "bullish",
-                "top": c3["low"],
-                "bottom": c1["high"],
+                "top": top,
+                "bottom": bottom,
             })
 
         # Bearish FVG: gap between c3 high and c1 low
         if c1["low"] > c3["high"]:
+            top = c1["low"]
+            bottom = c3["high"]
+
+            # Find when price enters the gap zone (mitigation)
+            end_timestamp = None
+            for j in range(i + 1, len(candles)):
+                if candles[j]["high"] >= bottom:
+                    end_timestamp = candles[j]["timestamp"]
+                    break
+
             fvg_events.append({
                 "timestamp": c2["timestamp"],
+                "end_timestamp": end_timestamp,
                 "direction": "bearish",
-                "top": c1["low"],
-                "bottom": c3["high"],
+                "top": top,
+                "bottom": bottom,
             })
 
     return fvg_events
