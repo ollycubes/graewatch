@@ -2,7 +2,7 @@ import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import OverlayToggles from './OverlayToggles';
 import SummaryPanel from './SummaryPanel';
-import { useDashboard } from '../context/DashboardContext';
+import { useDashboard } from '../context/useDashboard';
 
 function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();

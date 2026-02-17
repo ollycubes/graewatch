@@ -63,6 +63,16 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
   const requestVersionRef = useRef(0);
+  const showBOSRef = useRef(showBOS);
+  const showFVGRef = useRef(showFVG);
+
+  useEffect(() => {
+    showBOSRef.current = showBOS;
+  }, [showBOS]);
+
+  useEffect(() => {
+    showFVGRef.current = showFVG;
+  }, [showFVG]);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -140,13 +150,14 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
         }
 
         if (data.candles && seriesRef.current) {
-          const formatted = data.candles.map((c) => ({
-            time: toChartTime(c.timestamp),
-            open: c.open,
-            high: c.high,
-            low: c.low,
-            close: c.close,
-          }))
+          const formatted = data.candles
+            .map((c) => ({
+              time: toChartTime(c.timestamp),
+              open: c.open,
+              high: c.high,
+              low: c.low,
+              close: c.close,
+            }))
             .filter((c) => c.time !== null);
 
           seriesRef.current.setData(formatted);
@@ -181,10 +192,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
           }
 
           if (bosPrimitiveRef.current) {
-            bosPrimitiveRef.current.setLines(showBOS ? bosDataRef.current : []);
+            bosPrimitiveRef.current.setLines(showBOSRef.current ? bosDataRef.current : []);
           }
           if (fvgPrimitiveRef.current) {
-            fvgPrimitiveRef.current.setZones(showFVG ? fvgDataRef.current : []);
+            fvgPrimitiveRef.current.setZones(showFVGRef.current ? fvgDataRef.current : []);
           }
         }
       } catch (error) {

@@ -52,7 +52,9 @@ function SummaryPanel({ pair, interval }) {
   return (
     <aside className="summary-panel" aria-live="polite">
       <h2>Summary</h2>
-      <p className="summary-panel__meta">{pair} • {interval}</p>
+      <p className="summary-panel__meta">
+        {pair} • {interval}
+      </p>
 
       {loading && <p className="summary-panel__state">Loading signals...</p>}
       {error && <p className="summary-panel__error">{error}</p>}

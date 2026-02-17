@@ -18,8 +18,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background:
     radial-gradient(circle at 10% 12%, rgba(183, 196, 207, 0.48), transparent 34%),
-    radial-gradient(circle at 88% 5%, rgba(238, 227, 203, 0.7), transparent 26%),
-    #f4efe6;
+    radial-gradient(circle at 88% 5%, rgba(238, 227, 203, 0.7), transparent 26%), #f4efe6;
   color: var(--text-primary);
 }
 
@@ -81,7 +80,10 @@ body {
   background: #faf5ea;
   color: var(--text-primary);
   font-size: 0.95rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .control select:focus {

@@ -65,10 +65,7 @@ class FVGBoxesPaneView {
         y: yTop,
         width,
         height,
-        color:
-          fvg.direction === 'bullish'
-            ? 'rgba(38, 166, 154, 0.2)'
-            : 'rgba(239, 83, 80, 0.2)',
+        color: fvg.direction === 'bullish' ? 'rgba(38, 166, 154, 0.2)' : 'rgba(239, 83, 80, 0.2)',
       });
     }
 
