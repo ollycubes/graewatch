@@ -3,6 +3,57 @@ import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
 
+function toChartTime(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.floor(value);
+  }
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const input = value.trim();
+  if (!input) {
+    return null;
+  }
+
+  // Date-only (YYYY-MM-DD).
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    return Math.floor(Date.parse(`${input}T00:00:00Z`) / 1000);
+  }
+
+  // TwelveData intraday format (YYYY-MM-DD HH:mm:ss) -> UTC ISO.
+  if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2})?$/.test(input)) {
+    const withSeconds = input.length === 16 ? `${input}:00` : input;
+    return Math.floor(Date.parse(withSeconds.replace(' ', 'T') + 'Z') / 1000);
+  }
+
+  const parsed = Date.parse(input);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  return Math.floor(parsed / 1000);
+}
+
+function normalizeBosSignals(signals) {
+  return signals
+    .map((s) => ({
+      ...s,
+      swing_timestamp: toChartTime(s.swing_timestamp),
+      timestamp: toChartTime(s.timestamp),
+    }))
+    .filter((s) => s.swing_timestamp !== null && s.timestamp !== null);
+}
+
+function normalizeFvgSignals(signals) {
+  return signals
+    .map((s) => ({
+      ...s,
+      timestamp: toChartTime(s.timestamp),
+      end_timestamp: s.end_timestamp ? toChartTime(s.end_timestamp) : null,
+    }))
+    .filter((s) => s.timestamp !== null);
+}
+
 function CandlestickChart({ pair, interval, showBOS, showFVG }) {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
@@ -90,12 +141,13 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
 
         if (data.candles && seriesRef.current) {
           const formatted = data.candles.map((c) => ({
-            time: c.timestamp,
+            time: toChartTime(c.timestamp),
             open: c.open,
             high: c.high,
             low: c.low,
             close: c.close,
-          }));
+          }))
+            .filter((c) => c.time !== null);
 
           seriesRef.current.setData(formatted);
           chartRef.current.timeScale().fitContent();
@@ -116,14 +168,14 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
 
           if (bosResult.status === 'fulfilled' && bosResult.value.ok) {
             const bosData = await bosResult.value.json();
-            bosDataRef.current = bosData.signals || [];
+            bosDataRef.current = normalizeBosSignals(bosData.signals || []);
           } else {
             bosDataRef.current = [];
           }
 
           if (fvgResult.status === 'fulfilled' && fvgResult.value.ok) {
             const fvgData = await fvgResult.value.json();
-            fvgDataRef.current = fvgData.signals || [];
+            fvgDataRef.current = normalizeFvgSignals(fvgData.signals || []);
           } else {
             fvgDataRef.current = [];
           }

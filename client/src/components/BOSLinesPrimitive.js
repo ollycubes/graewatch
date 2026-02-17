@@ -18,14 +18,14 @@ class BOSLinesRenderer {
         ctx.lineTo(line.x2, line.y);
         ctx.stroke();
 
-        // Draw "BOS" label at midpoint, above bullish lines and below bearish lines
+        // Draw "bos" label at midpoint, above bullish lines and below bearish lines
         ctx.fillStyle = line.color;
-        ctx.font = '11px Arial';
+        ctx.font = 'italic 11px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const textX = (line.x1 + line.x2) / 2;
         const labelY = line.direction === 'bearish' ? line.y + 10 : line.y - 10;
-        ctx.fillText('BOS', textX, labelY);
+        ctx.fillText('bos', textX, labelY);
       }
     });
   }
