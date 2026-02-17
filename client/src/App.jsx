@@ -9,6 +9,7 @@ function App() {
   const [interval, setInterval] = useState('daily');
   const [showBOS, setShowBOS] = useState(true);
   const [showFVG, setShowFVG] = useState(true);
+  const [region, setRegion] = useState(null);
 
   return (
     <main className="dashboard">
@@ -57,6 +58,12 @@ function App() {
             />
             <span>FVG</span>
           </label>
+
+          {region && (
+            <button className="control control--button" onClick={() => setRegion(null)}>
+              Clear Region
+            </button>
+          )}
         </div>
 
         <div className="dashboard__chart-frame">
@@ -65,6 +72,8 @@ function App() {
             interval={interval}
             showBOS={showBOS}
             showFVG={showFVG}
+            region={region}
+            onRegionChange={setRegion}
           />
         </div>
       </section>
