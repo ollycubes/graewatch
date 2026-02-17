@@ -1,12 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './BOSLinesPrimitive';
+import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
 
-function CandlestickChart({ pair, interval }) {
+function CandlestickChart({ pair, interval, showBOS, showFVG }) {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
   const bosPrimitiveRef = useRef(null);
+  const fvgPrimitiveRef = useRef(null);
+  const bosDataRef = useRef(null);
+  const fvgDataRef = useRef(null);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -46,6 +50,11 @@ function CandlestickChart({ pair, interval }) {
     series.attachPrimitive(bosPrimitive);
     bosPrimitiveRef.current = bosPrimitive;
 
+    // Attach FVG boxes primitive
+    const fvgPrimitive = new FVGBoxesPrimitive();
+    series.attachPrimitive(fvgPrimitive);
+    fvgPrimitiveRef.current = fvgPrimitive;
+
     // Handle window resize
     const handleResize = () => {
       chart.applyOptions({ width: chartContainerRef.current.clientWidth });
@@ -60,7 +69,7 @@ function CandlestickChart({ pair, interval }) {
 
   // Fetch and display data when pair or interval changes
   useEffect(() => {
-    async function fetchCandles() {
+    async function fetchData() {
       try {
         const response = await fetch(`/api/candles?pair=${pair}&interval=${interval}`);
         const data = await response.json();
@@ -77,25 +86,46 @@ function CandlestickChart({ pair, interval }) {
           seriesRef.current.setData(formatted);
           chartRef.current.timeScale().fitContent();
 
-          // Fetch BOS signals and render as lines
-          try {
-            const bosRes = await fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`);
-            const bosData = await bosRes.json();
+          // Fetch BOS and FVG signals in parallel
+          const [bosRes, fvgRes] = await Promise.all([
+            fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`),
+            fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}`),
+          ]);
 
-            if (bosData.signals && bosPrimitiveRef.current) {
-              bosPrimitiveRef.current.setLines(bosData.signals);
-            }
-          } catch (err) {
-            console.error('Failed to fetch BOS signals:', err);
+          const bosData = await bosRes.json();
+          const fvgData = await fvgRes.json();
+
+          bosDataRef.current = bosData.signals || [];
+          fvgDataRef.current = fvgData.signals || [];
+
+          // Apply based on current toggle state
+          if (bosPrimitiveRef.current) {
+            bosPrimitiveRef.current.setLines(showBOS ? bosDataRef.current : []);
+          }
+          if (fvgPrimitiveRef.current) {
+            fvgPrimitiveRef.current.setZones(showFVG ? fvgDataRef.current : []);
           }
         }
       } catch (error) {
-        console.error('Failed to fetch candles:', error);
+        console.error('Failed to fetch data:', error);
       }
     }
 
-    fetchCandles();
+    fetchData();
   }, [pair, interval]);
+
+  // Toggle overlays without re-fetching
+  useEffect(() => {
+    if (bosPrimitiveRef.current) {
+      bosPrimitiveRef.current.setLines(showBOS ? bosDataRef.current || [] : []);
+    }
+  }, [showBOS]);
+
+  useEffect(() => {
+    if (fvgPrimitiveRef.current) {
+      fvgPrimitiveRef.current.setZones(showFVG ? fvgDataRef.current || [] : []);
+    }
+  }, [showFVG]);
 
   return (
     <div

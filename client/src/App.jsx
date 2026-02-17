@@ -7,6 +7,8 @@ const INTERVALS = ['daily', '1h', '4h', 'weekly'];
 function App() {
   const [pair, setPair] = useState('EUR/USD');
   const [interval, setInterval] = useState('daily');
+  const [showBOS, setShowBOS] = useState(true);
+  const [showFVG, setShowFVG] = useState(true);
 
   return (
     <main className="dashboard">
@@ -38,10 +40,32 @@ function App() {
               ))}
             </select>
           </label>
+          <label className="control control--toggle">
+            <input
+              type="checkbox"
+              checked={showBOS}
+              onChange={(e) => setShowBOS(e.target.checked)}
+            />
+            <span>BOS</span>
+          </label>
+
+          <label className="control control--toggle">
+            <input
+              type="checkbox"
+              checked={showFVG}
+              onChange={(e) => setShowFVG(e.target.checked)}
+            />
+            <span>FVG</span>
+          </label>
         </div>
 
         <div className="dashboard__chart-frame">
-          <CandlestickChart pair={pair} interval={interval} />
+          <CandlestickChart
+            pair={pair}
+            interval={interval}
+            showBOS={showBOS}
+            showFVG={showFVG}
+          />
         </div>
       </section>
     </main>
