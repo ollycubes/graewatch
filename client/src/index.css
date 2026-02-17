@@ -4,14 +4,23 @@
   box-sizing: border-box;
 }
 
+:root {
+  --palette-blue: #b7c4cf;
+  --palette-cream: #eee3cb;
+  --palette-peach: #d7c0ae;
+  --palette-brown: #967e76;
+  --text-primary: #3f332f;
+  --text-muted: #6e5d56;
+}
+
 body {
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background:
-    radial-gradient(circle at 12% 15%, rgba(149, 152, 161, 0.16), transparent 30%),
-    radial-gradient(circle at 85% 5%, rgba(149, 152, 161, 0.12), transparent 22%),
-    #131722;
-  color: #d7dae2;
+    radial-gradient(circle at 10% 12%, rgba(183, 196, 207, 0.48), transparent 34%),
+    radial-gradient(circle at 88% 5%, rgba(238, 227, 203, 0.7), transparent 26%),
+    #f4efe6;
+  color: var(--text-primary);
 }
 
 #root {
@@ -25,22 +34,22 @@ body {
 }
 
 .dashboard__panel {
-  background: linear-gradient(180deg, rgba(30, 34, 45, 0.92), rgba(23, 27, 37, 0.9));
-  border: 1px solid #2a2e39;
+  background: linear-gradient(165deg, var(--palette-cream) 0%, #f5ecda 55%, #f1e6d1 100%);
+  border: 1px solid rgba(150, 126, 118, 0.35);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 22px 46px rgba(150, 126, 118, 0.22);
 }
 
 .dashboard__header h1 {
-  color: #eceef4;
+  color: #4f4039;
   font-size: clamp(1.6rem, 3vw, 2.1rem);
   letter-spacing: 0.02em;
 }
 
 .dashboard__header p {
   margin-top: 6px;
-  color: #9598a1;
+  color: var(--text-muted);
   font-size: 0.95rem;
 }
 
@@ -58,7 +67,7 @@ body {
 }
 
 .control span {
-  color: #adb1bd;
+  color: var(--text-muted);
   font-size: 0.82rem;
   letter-spacing: 0.01em;
 }
@@ -67,25 +76,27 @@ body {
   appearance: none;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #3a4052;
+  border: 1px solid rgba(150, 126, 118, 0.45);
   border-radius: 10px;
-  background: #1e222d;
-  color: #d9dbe2;
+  background: #faf5ea;
+  color: var(--text-primary);
   font-size: 0.95rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .control select:focus {
   outline: none;
-  border-color: #5d6479;
-  box-shadow: 0 0 0 3px rgba(93, 100, 121, 0.25);
+  border-color: var(--palette-brown);
+  background-color: #fffdf7;
+  box-shadow: 0 0 0 3px rgba(183, 196, 207, 0.45);
 }
 
 .dashboard__chart-frame {
-  border: 1px solid #2a2e39;
+  border: 1px solid rgba(150, 126, 118, 0.4);
   border-radius: 14px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--palette-blue);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 @media (max-width: 720px) {

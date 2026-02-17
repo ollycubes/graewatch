@@ -30,6 +30,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
       },
       timeScale: {
         borderColor: '#3a3a4e',
+        minBarSpacing: 3,
       },
     });
 
