@@ -3,3 +3,106 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+body {
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background:
+    radial-gradient(circle at 12% 15%, rgba(149, 152, 161, 0.16), transparent 30%),
+    radial-gradient(circle at 85% 5%, rgba(149, 152, 161, 0.12), transparent 22%),
+    #131722;
+  color: #d7dae2;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.dashboard {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dashboard__panel {
+  background: linear-gradient(180deg, rgba(30, 34, 45, 0.92), rgba(23, 27, 37, 0.9));
+  border: 1px solid #2a2e39;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+}
+
+.dashboard__header h1 {
+  color: #eceef4;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  letter-spacing: 0.02em;
+}
+
+.dashboard__header p {
+  margin-top: 6px;
+  color: #9598a1;
+  font-size: 0.95rem;
+}
+
+.dashboard__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0 18px;
+}
+
+.control {
+  display: grid;
+  gap: 6px;
+  min-width: 170px;
+}
+
+.control span {
+  color: #adb1bd;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+}
+
+.control select {
+  appearance: none;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #3a4052;
+  border-radius: 10px;
+  background: #1e222d;
+  color: #d9dbe2;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.control select:focus {
+  outline: none;
+  border-color: #5d6479;
+  box-shadow: 0 0 0 3px rgba(93, 100, 121, 0.25);
+}
+
+.dashboard__chart-frame {
+  border: 1px solid #2a2e39;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+@media (max-width: 720px) {
+  .dashboard {
+    padding: 14px;
+  }
+
+  .dashboard__panel {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .dashboard__controls {
+    margin-top: 16px;
+  }
+
+  .control {
+    width: 100%;
+  }
+}

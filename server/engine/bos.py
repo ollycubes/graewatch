@@ -72,6 +72,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
         # Bullish BOS: close above last swing high
         if last_swing_high and candle["close"] > last_swing_high["price"]:
             bos_events.append({
+                "swing_timestamp": last_swing_high["timestamp"],
                 "timestamp": candle["timestamp"],
                 "direction": "bullish",
                 "price": candle["close"],
@@ -83,6 +84,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
         # Bearish BOS: close below last swing low
         if last_swing_low and candle["close"] < last_swing_low["price"]:
             bos_events.append({
+                "swing_timestamp": last_swing_low["timestamp"],
                 "timestamp": candle["timestamp"],
                 "direction": "bearish",
                 "price": candle["close"],

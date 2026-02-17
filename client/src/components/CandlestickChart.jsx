@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { createChart, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
+import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 
 function CandlestickChart({ pair, interval }) {
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
-  const bosMarkersRef = useRef(null);
+  const bosPrimitiveRef = useRef(null);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -40,6 +41,11 @@ function CandlestickChart({ pair, interval }) {
     chartRef.current = chart;
     seriesRef.current = series;
 
+    // Attach BOS lines primitive
+    const bosPrimitive = new BOSLinesPrimitive();
+    series.attachPrimitive(bosPrimitive);
+    bosPrimitiveRef.current = bosPrimitive;
+
     // Handle window resize
     const handleResize = () => {
       chart.applyOptions({ width: chartContainerRef.current.clientWidth });
@@ -71,26 +77,13 @@ function CandlestickChart({ pair, interval }) {
           seriesRef.current.setData(formatted);
           chartRef.current.timeScale().fitContent();
 
-          // Fetch BOS signals and render as markers
+          // Fetch BOS signals and render as lines
           try {
             const bosRes = await fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`);
             const bosData = await bosRes.json();
 
-            if (bosData.signals) {
-              const markers = bosData.signals.map((s) => ({
-                time: s.timestamp,
-                position: s.direction === 'bullish' ? 'belowBar' : 'aboveBar',
-                color: s.direction === 'bullish' ? '#26a69a' : '#ef5350',
-                shape: s.direction === 'bullish' ? 'arrowUp' : 'arrowDown',
-                text: 'BOS',
-              }));
-
-              markers.sort((a, b) => (a.time < b.time ? -1 : 1));
-              if (bosMarkersRef.current) {
-                bosMarkersRef.current.setMarkers(markers);
-              } else {
-                bosMarkersRef.current = createSeriesMarkers(seriesRef.current, markers);
-              }
+            if (bosData.signals && bosPrimitiveRef.current) {
+              bosPrimitiveRef.current.setLines(bosData.signals);
             }
           } catch (err) {
             console.error('Failed to fetch BOS signals:', err);
