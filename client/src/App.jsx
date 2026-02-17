@@ -9,15 +9,15 @@ function App() {
   const [interval, setInterval] = useState('daily');
 
   return (
-    <div style={{
-      backgroundColor: '#131722',
-      minHeight: '100vh',
-      padding: '20px',
-      fontFamily: 'Arial, sans-serif',
-    }}>
-      <h1 style={{ color: '#9598a1', marginBottom: '20px' }}>
-        Graewatch
-      </h1>
+    <div
+      style={{
+        backgroundColor: '#131722',
+        minHeight: '100vh',
+        padding: '20px',
+        fontFamily: 'Arial, sans-serif',
+      }}
+    >
+      <h1 style={{ color: '#9598a1', marginBottom: '20px' }}>Graewatch</h1>
 
       <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
         <select
@@ -33,7 +33,9 @@ function App() {
           }}
         >
           {PAIRS.map((p) => (
-            <option key={p} value={p}>{p}</option>
+            <option key={p} value={p}>
+              {p}
+            </option>
           ))}
         </select>
 
@@ -50,7 +52,9 @@ function App() {
           }}
         >
           {INTERVALS.map((i) => (
-            <option key={i} value={i}>{i}</option>
+            <option key={i} value={i}>
+              {i}
+            </option>
           ))}
         </select>
       </div>

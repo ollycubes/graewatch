@@ -7,6 +7,9 @@ import os
 from routes.candles import router as candles_router
 from routes import candles as candles_module
 
+from routes.analysis import router as analysis_router
+from routes import analysis as analysis_module
+
 load_dotenv(dotenv_path="../.env")
 
 app = FastAPI()
@@ -24,6 +27,9 @@ db = mongo_client["graewatch"]
 
 # Give the candles route access to the database
 candles_module.db = db
+
+analysis_module.db = db
+app.include_router(analysis_router)
 
 # Register the route
 app.include_router(candles_router)
