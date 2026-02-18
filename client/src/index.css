@@ -216,6 +216,177 @@ body {
   font-size: 0.9rem;
 }
 
+/* ── Intro Screen ── */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0806;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: opacity 1.8s ease;
+}
+
+.intro--fadeout {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(10, 8, 6, 0.85) 100%);
+  pointer-events: none;
+}
+
+.intro__line-sweep {
+  position: absolute;
+  top: 50%;
+  left: -10%;
+  width: 120%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d7c0ae, #eee3cb, #d7c0ae, transparent);
+  transform: translateY(-50%) scaleX(0);
+  animation: intro-sweep 1.4s ease-out 0.4s forwards;
+}
+
+@keyframes intro-sweep {
+  0% { transform: translateY(-50%) scaleX(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-50%) scaleX(1); opacity: 0.3; }
+}
+
+.intro__content {
+  position: relative;
+  text-align: center;
+  z-index: 2;
+}
+
+.intro__title {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  color: #eee3cb;
+  text-transform: uppercase;
+}
+
+.intro__char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(30px);
+  filter: blur(8px);
+}
+
+.intro__title--visible .intro__char {
+  animation: intro-char-in 0.7s ease-out forwards;
+}
+
+@keyframes intro-char-in {
+  0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+.intro__divider {
+  width: 0;
+  height: 1px;
+  margin: 18px auto;
+  background: linear-gradient(90deg, transparent, #967e76, transparent);
+  transition: width 1s ease;
+}
+
+.intro__divider--visible {
+  width: 180px;
+}
+
+.intro__tagline {
+  font-size: clamp(0.85rem, 2vw, 1.15rem);
+  color: #967e76;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+.intro__tagline--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.intro__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 500px;
+  height: 500px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(238, 227, 203, 0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 2s ease;
+  pointer-events: none;
+}
+
+.intro__glow--visible {
+  opacity: 1;
+}
+
+.intro__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.intro__particle {
+  position: absolute;
+  bottom: -4px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #d7c0ae;
+  opacity: 0;
+  animation: intro-particle-rise linear forwards;
+}
+
+@keyframes intro-particle-rise {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-100vh); }
+}
+
+.intro__skip {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #6e5d56;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: intro-skip-fade 1s ease 2s forwards;
+}
+
+@keyframes intro-skip-fade {
+  to { opacity: 0.5; }
+}
+
+/* ── Dashboard entrance after intro ── */
+
+.dashboard--entering {
+  animation: dashboard-enter 0.8s ease-out both;
+}
+
+@keyframes dashboard-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (max-width: 720px) {
   .dashboard {
     padding: 14px;
