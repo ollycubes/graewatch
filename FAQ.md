@@ -4,7 +4,7 @@
 
 (needs updating for each cohort)
 
-https://campus.cs.le.ac.uk/gitlab/ug_project/25-26/UID
+https://campus.cs.le.ac.uk/gitlab/ug_project/25-26/ogc3
 
 ## Who has access?
 
