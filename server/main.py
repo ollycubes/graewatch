@@ -34,6 +34,9 @@ candles_module.db = db
 analysis_module.db = db
 app.include_router(analysis_router)
 
+simulate_module.db = db
+app.include_router(simulate_router)
+
 # Register the route
 app.include_router(candles_router)
 

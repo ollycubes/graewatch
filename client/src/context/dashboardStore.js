@@ -16,6 +16,7 @@ export const initialState = {
     bos: true,
     fvg: true,
   },
+  simulationOn: false,
 };
 
 export function dashboardReducer(state, action) {
