@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react';
 
+const MAX_SIGNALS = 20;
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
+  if (Number.isNaN(d.getTime())) return String(ts);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatPrice(p) {
+  return typeof p === 'number' ? p.toFixed(4) : String(p);
+}
+
 function SummaryPanel({ pair, interval }) {
   const [summary, setSummary] = useState({ bos: [], fvg: [] });
   const [loading, setLoading] = useState(false);
@@ -49,6 +62,9 @@ function SummaryPanel({ pair, interval }) {
     };
   }, [pair, interval]);
 
+  const recentBos = [...summary.bos].reverse().slice(0, MAX_SIGNALS);
+  const recentFvg = [...summary.fvg].reverse().slice(0, MAX_SIGNALS);
+
   return (
     <aside className="summary-panel" aria-live="polite">
       <h2>Summary</h2>
@@ -56,19 +72,41 @@ function SummaryPanel({ pair, interval }) {
         {pair} • {interval}
       </p>
 
-      {loading && <p className="summary-panel__state">Loading signals...</p>}
+      {loading && <div className="spinner" />}
       {error && <p className="summary-panel__error">{error}</p>}
 
       {!loading && !error && (
         <>
           <section className="summary-panel__section">
-            <h3>BOS</h3>
-            <p className="summary-panel__count">{summary.bos.length} signals</p>
+            <h3>BOS ({summary.bos.length})</h3>
+            {recentBos.length === 0 ? (
+              <p className="summary-panel__count">No signals</p>
+            ) : (
+              <ul className="summary-panel__list">
+                {recentBos.map((s, i) => (
+                  <li key={i}>
+                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} break at{' '}
+                    {formatPrice(s.price)} on {formatDate(s.timestamp)}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section className="summary-panel__section">
-            <h3>FVG</h3>
-            <p className="summary-panel__count">{summary.fvg.length} zones</p>
+            <h3>FVG ({summary.fvg.length})</h3>
+            {recentFvg.length === 0 ? (
+              <p className="summary-panel__count">No zones</p>
+            ) : (
+              <ul className="summary-panel__list">
+                {recentFvg.map((s, i) => (
+                  <li key={i}>
+                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} gap between{' '}
+                    {formatPrice(s.bottom)}–{formatPrice(s.top)}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </>
       )}

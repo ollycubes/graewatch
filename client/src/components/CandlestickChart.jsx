@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
@@ -55,6 +55,7 @@ function normalizeFvgSignals(signals) {
 }
 
 function CandlestickChart({ pair, interval, showBOS, showFVG }) {
+  const [error, setError] = useState('');
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
@@ -135,6 +136,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
     const requestVersion = ++requestVersionRef.current;
 
     async function fetchData() {
+      setError('');
       try {
         const response = await fetch(`/api/candles?pair=${pair}&interval=${interval}`, {
           signal: abortController.signal,
@@ -202,7 +204,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
         if (error?.name === 'AbortError') {
           return;
         }
-        console.error('Failed to fetch data:', error);
+        setError('Failed to load chart data. Check that the server is running.');
       }
     }
 
@@ -227,10 +229,13 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
   }, [showFVG]);
 
   return (
-    <div
-      ref={chartContainerRef}
-      style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}
-    />
+    <div style={{ width: '100%' }}>
+      {error && <p className="chart-error">{error}</p>}
+      <div
+        ref={chartContainerRef}
+        style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}
+      />
+    </div>
   );
 }
 
