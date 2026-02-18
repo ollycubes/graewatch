@@ -6,7 +6,6 @@ from .zones import detect as zones_detect
 from .wyckoff import detect as wyckoff_detect
 from .gann import detect as gann_detect
 from .confluence import detect as confluence_detect
-from .simulate import simulate_candles
 
 COMPONENTS = {
     "bos": bos_detect,

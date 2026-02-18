@@ -10,9 +10,6 @@ from routes import candles as candles_module
 from routes.analysis import router as analysis_router
 from routes import analysis as analysis_module
 
-from routes.simulate import router as simulate_router
-from routes import simulate as simulate_module
-
 load_dotenv(dotenv_path="../.env")
 
 app = FastAPI()
@@ -33,9 +30,6 @@ candles_module.db = db
 
 analysis_module.db = db
 app.include_router(analysis_router)
-
-simulate_module.db = db
-app.include_router(simulate_router)
 
 # Register the route
 app.include_router(candles_router)
