@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-export const PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD'];
+export const PAIRS = ['EUR/USD', 'GBP/USD'];
 export const INTERVALS = [
   { label: '1W', value: 'weekly' },
   { label: '1D', value: 'daily' },
