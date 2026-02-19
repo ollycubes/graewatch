@@ -22,7 +22,6 @@ function OverlayToggles() {
         />
         <span>FVG</span>
       </label>
-
     </>
   );
 }
