@@ -16,7 +16,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173"], # Allows frontend (local:5173) to connect to backend (local:8000)
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -42,17 +42,21 @@ async def health():
 
 @app.on_event("startup")
 async def create_indexes():
+    # Create unique indexes for the database
     await db["candles"].create_index(
         [("pair", 1), ("interval", 1), ("timestamp", 1)],
         unique=True,
     )
+    # Index for efficient querying of the most recent candles
     await db["candles"].create_index(
         [("pair", 1), ("interval", 1), ("fetched_at", -1)],
     )
+    # Creates indexes for the analysis
     await db["analysis"].create_index(
         [("component", 1), ("pair", 1), ("interval", 1)],
         unique=True,
     )
+    # Index for efficient querying of the most recent analysis
     await db["analysis"].create_index(
         [("component", 1), ("pair", 1), ("interval", 1), ("candles_fetched_at", -1)],
     )
