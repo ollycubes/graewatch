@@ -1,9 +1,6 @@
-"""Shared interval normalization and provider mapping helpers."""
-
 from __future__ import annotations
 
-
-INTERVAL_ALIASES = {
+INTERVAL_ALIASES = { # Different ways its referred in app
     "weekly": "weekly",
     "1w": "weekly",
     "w": "weekly",
@@ -20,7 +17,7 @@ INTERVAL_ALIASES = {
     "15min": "15min",
 }
 
-TWELVE_DATA_INTERVAL_MAP = {
+TWELVE_DATA_INTERVAL_MAP = { # Different ways its referred in twelvedata
     "daily": "1day",
     "1h": "1h",
     "4h": "4h",
@@ -29,7 +26,6 @@ TWELVE_DATA_INTERVAL_MAP = {
 }
 
 SUPPORTED_INTERVALS = tuple(TWELVE_DATA_INTERVAL_MAP.keys())
-
 
 def normalize_interval(value: str) -> str | None:
     if not value:
