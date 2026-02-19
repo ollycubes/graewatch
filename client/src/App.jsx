@@ -3,16 +3,30 @@ import DashboardOverview from './components/DashboardOverview';
 import IntroScreen from './components/IntroScreen';
 
 function App() {
+  // Gates whether the dashboard is visible yet.
+  // Starts false so the intro plays first; flips to true when the intro ends or is skipped.
   const [introComplete, setIntroComplete] = useState(false);
 
+  // Stable callback passed down to IntroScreen.
+  // useCallback prevents it from being recreated on every render,
+  // which would reset the intro's useEffect timer unnecessarily.
   const handleIntroFinish = useCallback(() => {
     setIntroComplete(true);
   }, []);
 
   return (
     <>
+      {/* IntroScreen unmounts itself once introComplete is true,
+          freeing all its timers and DOM nodes. */}
       {!introComplete && <IntroScreen onFinish={handleIntroFinish} />}
-      <main className={`dashboard ${introComplete ? 'dashboard--entering' : ''}`}
+
+      {/* The dashboard is always rendered in the background so the chart and data
+          can begin loading during the intro — by the time the user reaches it,
+          everything is ready. visibility: hidden keeps it off-screen without
+          removing it from layout; dashboard--entering plays the slide-up entrance
+          animation once the intro is done. */}
+      <main
+        className={`dashboard ${introComplete ? 'dashboard--entering' : ''}`}
         style={introComplete ? undefined : { visibility: 'hidden' }}
       >
         <DashboardOverview />
