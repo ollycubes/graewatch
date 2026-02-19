@@ -14,6 +14,7 @@ async def get_analysis(
     pair: str = Query(...),
     interval: str = Query("daily"),
 ):
+    # Normalise the interval
     normalized_interval = normalize_interval(interval)
     if normalized_interval is None:
         raise HTTPException(
@@ -69,7 +70,7 @@ async def get_analysis(
             detail=f"No candle data found for {pair} {normalized_interval}. Fetch candles first.",
         )
 
-    # Run the algorithm
+    # Run the algorithms
     detect_fn = COMPONENTS[component]
     results = detect_fn(candles)
 
@@ -87,4 +88,4 @@ async def get_analysis(
         upsert=True,
     )
 
-    return payload
+    return payload # This is the payload that will be sent to the frontend

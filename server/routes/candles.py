@@ -51,6 +51,8 @@ async def get_candles(
                 {"_id": 0, "pair": 0, "interval": 0, "fetched_at": 0},
             ).sort("timestamp", 1)
             candles = await cursor.to_list(length=5000)
+
+            # If the data is fresh we return cached candle data
             return {
                 "source": "cache",
                 "count": len(candles),
@@ -61,25 +63,29 @@ async def get_candles(
 
     # Fetch from Twelve Data
     api_key = os.getenv("TWELVE_DATA_API_KEY")
-    params = {
+    
+    # Request parameters
+    params = { 
         "symbol": pair,
         "interval": td_interval,
         "outputsize": 500,
         "apikey": api_key,
     }
 
+    # Making the request to Twelve Data
     async with httpx.AsyncClient() as client:
         response = await client.get(TWELVE_DATA_BASE_URL, params=params)
         data = response.json()
 
+    # Error handling if there's no response we send a 502
     if "values" not in data:
         raise HTTPException(status_code=502, detail={"error": "Failed to fetch data", "provider": data})
 
     # Parse and store in MongoDB
     now = datetime.utcnow()
-
     ops = []
     for item in data["values"]:
+        # Creating the candle document following its json structure
         candle_doc = {
             "pair": pair,
             "interval": normalized_interval,

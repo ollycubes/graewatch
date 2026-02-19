@@ -7,7 +7,7 @@ from .wyckoff import detect as wyckoff_detect
 from .gann import detect as gann_detect
 from .confluence import detect as confluence_detect
 
-COMPONENTS = {
+COMPONENTS = { # This is a dictionary of all the algorithms, each key is a route and each value is the function to run
     "bos": bos_detect,
     "fvg": fvg_detect,
     "orderblocks": orderblocks_detect,
