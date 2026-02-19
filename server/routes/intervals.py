@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-INTERVAL_ALIASES = { # Different ways its referred in app
+INTERVAL_ALIASES = { # These are the rules
     "weekly": "weekly",
     "1w": "weekly",
     "w": "weekly",
@@ -27,7 +27,11 @@ TWELVE_DATA_INTERVAL_MAP = { # Different ways its referred in twelvedata
 
 SUPPORTED_INTERVALS = tuple(TWELVE_DATA_INTERVAL_MAP.keys())
 
+# We either churn and return the time value ot not here
 def normalize_interval(value: str) -> str | None:
     if not value:
         return None
     return INTERVAL_ALIASES.get(value.strip().lower())
+
+
+# After nomalisation, my values are then used in the candles.py or analysis.py routes
