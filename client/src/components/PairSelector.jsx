@@ -1,3 +1,5 @@
+// Dropdown for selecting the active currency pair (e.g. EUR/USD).
+// Available pairs come from context so this component never hardcodes the list.
 import { useDashboard } from '../context/useDashboard';
 
 function PairSelector() {

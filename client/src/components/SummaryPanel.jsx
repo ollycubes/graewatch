@@ -1,7 +1,12 @@
+// Sidebar panel showing the most recent BOS and FVG signals for the selected pair/interval.
+// Fetches independently of CandlestickChart so the sidebar stays in sync even if
+// the chart is still loading.
 import { useEffect, useState } from 'react';
 
+// Cap the list length so the sidebar doesn't grow unbounded on high-frequency intervals.
 const MAX_SIGNALS = 20;
 
+// Accepts a Unix timestamp (seconds) or ISO string and returns YYYY-MM-DD.
 function formatDate(ts) {
   if (!ts) return '';
   const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
@@ -19,6 +24,8 @@ function SummaryPanel({ pair, interval }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // AbortController cancels in-flight requests when pair/interval changes
+    // before the previous fetch completes, preventing stale data from rendering.
     const abortController = new AbortController();
 
     async function fetchSummary() {

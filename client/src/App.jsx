@@ -16,15 +16,10 @@ function App() {
 
   return (
     <>
-      {/* IntroScreen unmounts itself once introComplete is true,
-          freeing all its timers and DOM nodes. */}
+      {/* IntroScreen unmounts itself once introComplete is true, freeing all its timers and DOM nodes. */}
       {!introComplete && <IntroScreen onFinish={handleIntroFinish} />}
 
-      {/* The dashboard is always rendered in the background so the chart and data
-          can begin loading during the intro — by the time the user reaches it,
-          everything is ready. visibility: hidden keeps it off-screen without
-          removing it from layout; dashboard--entering plays the slide-up entrance
-          animation once the intro is done. */}
+      {/* The dashboard is rendered in the background, chart and data begin loading during the intro too */}
       <main
         className={`dashboard ${introComplete ? 'dashboard--entering' : ''}`}
         style={introComplete ? undefined : { visibility: 'hidden' }}

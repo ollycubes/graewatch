@@ -1,3 +1,6 @@
+// Checkbox toggles for showing/hiding BOS and FVG overlays on the chart.
+// Dispatches TOGGLE_OVERLAY to context — CandlestickChart reacts to the
+// updated state and shows/hides the relevant primitive without re-fetching.
 import { useDashboard } from '../context/useDashboard';
 
 function OverlayToggles() {

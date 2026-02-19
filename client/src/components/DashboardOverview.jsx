@@ -1,3 +1,6 @@
+// Root layout component for the dashboard.
+// Reads shared state from context and wires up the interval selector here
+// (pair and overlay toggles are self-contained in their own components).
 import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import OverlayToggles from './OverlayToggles';
