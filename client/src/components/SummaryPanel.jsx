@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 // Cap the list length so the sidebar doesn't grow unbounded on high-frequency intervals.
 const MAX_SIGNALS = 20;
 
-// Accepts a Unix timestamp (seconds) or ISO string and returns YYYY-MM-DD.
+// Accepts a unix timestamp in seconds or ISO string and returns YYYY-MM-DD.
 function formatDate(ts) {
   if (!ts) return '';
   const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
