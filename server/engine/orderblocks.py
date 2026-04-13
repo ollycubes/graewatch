@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Order Blocks (OB) — the last opposing candle before a Break of Structure.
@@ -5,15 +8,17 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     A bullish OB is the last bearish candle before a bullish BOS (close above swing high).
     A bearish OB is the last bullish candle before a bearish BOS (close below swing low).
 
-    Each OB zone spans the full body of the originating candle (high to low).
+    Zone ranges:
+        - Bullish OB (bearish candle): open → high (top wick)
+        - Bearish OB (bullish candle): low (bottom wick) → open
     Mitigation occurs when a later candle's wick enters the OB zone.
 
     Returns a list of dicts with:
         - timestamp:      OB candle timestamp (zone start)
         - end_timestamp:  when mitigated (zone end), or None if unmitigated
         - direction:      "bullish" or "bearish"
-        - top:            OB candle high
-        - bottom:         OB candle low
+        - top:            upper boundary of the OB zone
+        - bottom:         lower boundary of the OB zone
     """
     N = 3  # lookback for swing detection (consistent with BOS / Gann)
     swing_highs: list[dict] = []
@@ -81,7 +86,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
                     "bos_index": i,
                     "direction": "bullish",
                     "top": ob_candle["high"],
-                    "bottom": ob_candle["low"],
+                    "bottom": ob_candle["open"],
                     "timestamp": ob_candle["timestamp"],
                 })
             last_swing_high = None  # reset to prevent duplicate BOS signals
@@ -99,7 +104,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
                     "ob_index": ob_candle["index"],
                     "bos_index": i,
                     "direction": "bearish",
-                    "top": ob_candle["high"],
+                    "top": ob_candle["open"],
                     "bottom": ob_candle["low"],
                     "timestamp": ob_candle["timestamp"],
                 })
@@ -136,9 +141,9 @@ def _find_last_opposing_candle(
     for j in range(bos_index - 1, max(search_start - 1, -1), -1):
         c = candles[j]
         if direction == "bearish" and c["close"] < c["open"]:
-            return {"index": j, "high": c["high"], "low": c["low"], "timestamp": c["timestamp"]}
+            return {"index": j, "open": c["open"], "high": c["high"], "low": c["low"], "timestamp": c["timestamp"]}
         if direction == "bullish" and c["close"] > c["open"]:
-            return {"index": j, "high": c["high"], "low": c["low"], "timestamp": c["timestamp"]}
+            return {"index": j, "open": c["open"], "high": c["high"], "low": c["low"], "timestamp": c["timestamp"]}
     return None
 
 
