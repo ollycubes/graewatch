@@ -52,9 +52,10 @@ function DashboardOverview() {
 
         <div className="dashboard__sidebar">
           <PredictionCard pair={state.pair} interval={state.interval} />
-          <SummaryPanel pair={state.pair} interval={state.interval} />
         </div>
       </div>
+
+      <SummaryPanel pair={state.pair} interval={state.interval} />
     </section>
   );
 }

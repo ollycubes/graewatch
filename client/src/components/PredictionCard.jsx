@@ -155,50 +155,52 @@ function PredictionCard({ pair, interval }) {
       <p className="prediction-card__meta">{pair} • {interval}</p>
 
       <div className="prediction-card__hero">
-        <span className={`prediction-card__direction ${dirClass}`}>
-          <span className="prediction-card__arrow">{dirArrow}</span>
-          {dirLabel}
-        </span>
+        <div className="prediction-card__dir-row">
+          <span className={`prediction-card__direction ${dirClass}`}>
+            <span className="prediction-card__arrow">{dirArrow}</span>
+            {dirLabel}
+          </span>
 
-        <ConfidenceGauge
-          confidence={prediction.confidence}
-          direction={prediction.direction}
-        />
-      </div>
-
-      {prediction.direction !== 'neutral' && (
-        <div className="prediction-card__range">
-          <div className="prediction-card__range-row">
-            <span className="prediction-card__range-label">Target High</span>
-            <span className="prediction-card__range-value">
-              {formatPrice(prediction.target_high)}
-            </span>
-          </div>
-          <div className="prediction-card__range-row">
-            <span className="prediction-card__range-label">Current</span>
-            <span className="prediction-card__range-value prediction-card__range-value--current">
-              {formatPrice(prediction.current_close)}
-            </span>
-          </div>
-          <div className="prediction-card__range-row">
-            <span className="prediction-card__range-label">Target Low</span>
-            <span className="prediction-card__range-value">
-              {formatPrice(prediction.target_low)}
-            </span>
-          </div>
+          <ConfidenceGauge
+            confidence={prediction.confidence}
+            direction={prediction.direction}
+          />
         </div>
-      )}
 
-      <div className="prediction-card__signals">
-        <h3>Signal Confluence</h3>
-        <div className="prediction-card__chips">
-          {Object.entries(SIGNAL_LABELS).map(([key, label]) => (
-            <SignalChip
-              key={key}
-              label={label}
-              value={prediction.signals?.[key]}
-            />
-          ))}
+        {prediction.direction !== 'neutral' && (
+          <div className="prediction-card__range">
+            <div className="prediction-card__range-row">
+              <span className="prediction-card__range-label">Target High</span>
+              <span className="prediction-card__range-value">
+                {formatPrice(prediction.target_high)}
+              </span>
+            </div>
+            <div className="prediction-card__range-row">
+              <span className="prediction-card__range-label">Current</span>
+              <span className="prediction-card__range-value prediction-card__range-value--current">
+                {formatPrice(prediction.current_close)}
+              </span>
+            </div>
+            <div className="prediction-card__range-row">
+              <span className="prediction-card__range-label">Target Low</span>
+              <span className="prediction-card__range-value">
+                {formatPrice(prediction.target_low)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="prediction-card__signals">
+          <h3>Signal Confluence</h3>
+          <div className="prediction-card__chips">
+            {Object.entries(SIGNAL_LABELS).map(([key, label]) => (
+              <SignalChip
+                key={key}
+                label={label}
+                value={prediction.signals?.[key]}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
