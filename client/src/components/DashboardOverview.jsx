@@ -44,6 +44,7 @@ function DashboardOverview() {
             interval={state.interval}
             showBOS={state.overlays.bos}
             showFVG={state.overlays.fvg}
+            showGann={state.overlays.gann}
           />
         </div>
 

@@ -25,6 +25,15 @@ function OverlayToggles() {
         />
         <span>FVG</span>
       </label>
+
+      <label className="control control--toggle">
+        <input
+          type="checkbox"
+          checked={state.overlays.gann}
+          onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'gann' })}
+        />
+        <span>Gann</span>
+      </label>
     </>
   );
 }

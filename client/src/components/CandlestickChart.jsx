@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
+import { GannBoxesPrimitive } from './GannBoxesPrimitive';
 
 function toChartTime(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -54,18 +55,31 @@ function normalizeFvgSignals(signals) {
     .filter((s) => s.timestamp !== null);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG }) {
+function normalizeGannSignals(signals) {
+  return signals
+    .map((s) => ({
+      ...s,
+      start_timestamp: toChartTime(s.start_timestamp),
+      end_timestamp: toChartTime(s.end_timestamp),
+    }))
+    .filter((s) => s.start_timestamp !== null && s.end_timestamp !== null);
+}
+
+function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
   const [error, setError] = useState('');
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
   const bosPrimitiveRef = useRef(null);
   const fvgPrimitiveRef = useRef(null);
+  const gannPrimitiveRef = useRef(null);
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
+  const gannDataRef = useRef([]);
   const requestVersionRef = useRef(0);
   const showBOSRef = useRef(showBOS);
   const showFVGRef = useRef(showFVG);
+  const showGannRef = useRef(showGann);
 
   useEffect(() => {
     showBOSRef.current = showBOS;
@@ -74,6 +88,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
   useEffect(() => {
     showFVGRef.current = showFVG;
   }, [showFVG]);
+
+  useEffect(() => {
+    showGannRef.current = showGann;
+  }, [showGann]);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -117,6 +135,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
     const fvgPrimitive = new FVGBoxesPrimitive();
     series.attachPrimitive(fvgPrimitive);
     fvgPrimitiveRef.current = fvgPrimitive;
+
+    const gannPrimitive = new GannBoxesPrimitive();
+    series.attachPrimitive(gannPrimitive);
+    gannPrimitiveRef.current = gannPrimitive;
 
     // Handle window resize
     const handleResize = () => {
@@ -166,11 +188,14 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
           chartRef.current.timeScale().fitContent();
 
           // Fetch BOS and FVG signals in parallel without blocking candle rendering.
-          const [bosResult, fvgResult] = await Promise.allSettled([
+          const [bosResult, fvgResult, gannResult] = await Promise.allSettled([
             fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`, {
               signal: abortController.signal,
             }),
             fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}`, {
+              signal: abortController.signal,
+            }),
+            fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}`, {
               signal: abortController.signal,
             }),
           ]);
@@ -193,11 +218,21 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
             fvgDataRef.current = [];
           }
 
+          if (gannResult.status === 'fulfilled' && gannResult.value.ok) {
+            const gannData = await gannResult.value.json();
+            gannDataRef.current = normalizeGannSignals(gannData.signals || []);
+          } else {
+            gannDataRef.current = [];
+          }
+
           if (bosPrimitiveRef.current) {
             bosPrimitiveRef.current.setLines(showBOSRef.current ? bosDataRef.current : []);
           }
           if (fvgPrimitiveRef.current) {
             fvgPrimitiveRef.current.setZones(showFVGRef.current ? fvgDataRef.current : []);
+          }
+          if (gannPrimitiveRef.current) {
+            gannPrimitiveRef.current.setBoxes(showGannRef.current ? gannDataRef.current : []);
           }
         }
       } catch (error) {
@@ -227,6 +262,12 @@ function CandlestickChart({ pair, interval, showBOS, showFVG }) {
       fvgPrimitiveRef.current.setZones(showFVG ? fvgDataRef.current : []);
     }
   }, [showFVG]);
+
+  useEffect(() => {
+    if (gannPrimitiveRef.current) {
+      gannPrimitiveRef.current.setBoxes(showGann ? gannDataRef.current : []);
+    }
+  }, [showGann]);
 
   return (
     <div style={{ width: '100%' }}>

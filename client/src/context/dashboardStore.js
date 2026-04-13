@@ -15,6 +15,7 @@ export const initialState = {
   overlays: {
     bos: true,
     fvg: true,
+    gann: true,
   },
 };
 
