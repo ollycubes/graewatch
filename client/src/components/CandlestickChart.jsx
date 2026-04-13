@@ -4,6 +4,7 @@ import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
 import { GannBoxesPrimitive } from './GannBoxesPrimitive';
 import { OBBoxesPrimitive } from './OBBoxesPrimitive';
+import { PredictionZonePrimitive } from './PredictionZonePrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
 
 function toChartTime(value) {
@@ -113,6 +114,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
   const fvgPrimitiveRef = useRef(null);
   const gannPrimitiveRef = useRef(null);
   const obPrimitiveRef = useRef(null);
+  const predictionPrimitiveRef = useRef(null);
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
   const gannDataRef = useRef([]);
@@ -190,6 +192,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
     const obPrimitive = new OBBoxesPrimitive();
     series.attachPrimitive(obPrimitive);
     obPrimitiveRef.current = obPrimitive;
+
+    const predictionPrimitive = new PredictionZonePrimitive();
+    series.attachPrimitive(predictionPrimitive);
+    predictionPrimitiveRef.current = predictionPrimitive;
 
     // Handle window resize
     const handleResize = () => {
@@ -353,6 +359,22 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
             obPrimitiveRef.current.setZones(
               showOBRef.current ? filterByBias(obDataRef.current, bias) : [],
             );
+          }
+
+          // Fetch prediction separately (doesn't use the same COMPONENTS pattern)
+          try {
+            const predRes = await fetch(
+              `/api/prediction?pair=${pair}&interval=${interval}`,
+              { signal: abortController.signal },
+            );
+            if (predRes.ok && predictionPrimitiveRef.current) {
+              const predData = await predRes.json();
+              predictionPrimitiveRef.current.setPrediction(predData);
+            }
+          } catch (predErr) {
+            if (predErr?.name !== 'AbortError') {
+              // Prediction is non-critical — silently ignore errors
+            }
           }
         }
       } catch (error) {

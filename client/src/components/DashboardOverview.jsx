@@ -5,6 +5,7 @@ import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import OverlayToggles from './OverlayToggles';
 import SummaryPanel from './SummaryPanel';
+import PredictionCard from './PredictionCard';
 import { useDashboard } from '../context/useDashboard';
 
 function DashboardOverview() {
@@ -49,7 +50,10 @@ function DashboardOverview() {
           />
         </div>
 
-        <SummaryPanel pair={state.pair} interval={state.interval} />
+        <div className="dashboard__sidebar">
+          <PredictionCard pair={state.pair} interval={state.interval} />
+          <SummaryPanel pair={state.pair} interval={state.interval} />
+        </div>
       </div>
     </section>
   );
