@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
@@ -6,7 +8,7 @@ from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
 
 router = APIRouter()
 
-db: AsyncIOMotorDatabase = None
+db: AsyncIOMotorDatabase | None = None
 
 # Maps each current-TF interval to its higher timeframe for bias computation.
 HTF_MAP = {
@@ -26,6 +28,9 @@ async def get_prediction(
     """
     Generate a next-period price prediction by combining all strategy signals.
     """
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database not initialized")
+
     normalized_interval = normalize_interval(interval)
     if normalized_interval is None:
         raise HTTPException(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import httpx
@@ -14,7 +16,7 @@ from routes.intervals import (
 router = APIRouter()
 
 # Set from main.py
-db: AsyncIOMotorDatabase = None
+db: AsyncIOMotorDatabase | None = None
 
 TWELVE_DATA_BASE_URL = "https://api.twelvedata.com/time_series"
 

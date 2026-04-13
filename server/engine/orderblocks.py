@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
+def detect(candles: list[dict]) -> list[dict]:
     """
     Detect Order Blocks (OB) — the last opposing candle before a Break of Structure.
 

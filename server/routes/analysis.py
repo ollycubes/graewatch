@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
@@ -5,7 +7,7 @@ from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
 
 router = APIRouter()
 
-db: AsyncIOMotorDatabase = None
+db: AsyncIOMotorDatabase | None = None
 
 
 @router.get("/api/analysis/{component}")
