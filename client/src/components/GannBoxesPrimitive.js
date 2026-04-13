@@ -3,26 +3,13 @@
  *
  * Each Gann box is a rectangle between a swing high and swing low with:
  * - Bounding rectangle outline
- * - Horizontal grid lines at 0.25, 0.5, 0.75 of the price range
- * - Vertical grid lines at 0.25, 0.5, 0.75 of the time range
- * - Diagonal angle lines: 1x1 (corner-to-corner), 2x1, and 1x2
+ * - A horizontal midline separating premium (top half) and discount (bottom half) zones
  */
 
-const SUBDIVISIONS = [0.25, 0.5, 0.75];
-
 const COLORS = {
-  bullish: {
-    fill: 'rgba(255, 193, 7, 0.08)',
-    border: 'rgba(255, 193, 7, 0.6)',
-    grid: 'rgba(255, 193, 7, 0.25)',
-    diagonal: 'rgba(255, 193, 7, 0.4)',
-  },
-  bearish: {
-    fill: 'rgba(255, 152, 0, 0.08)',
-    border: 'rgba(255, 152, 0, 0.6)',
-    grid: 'rgba(255, 152, 0, 0.25)',
-    diagonal: 'rgba(255, 152, 0, 0.4)',
-  },
+  fill: 'rgba(150, 150, 150, 0.06)',
+  border: 'rgba(150, 150, 150, 0.5)',
+  midline: 'rgba(150, 150, 150, 0.4)',
 };
 
 class GannBoxesRenderer {
@@ -33,62 +20,29 @@ class GannBoxesRenderer {
   draw(target) {
     target.useMediaCoordinateSpace(({ context: ctx }) => {
       for (const box of this._boxes) {
-        const { x1, x2, yTop, yBottom, colors } = box;
+        const { x1, x2, yTop, yBottom } = box;
         const w = x2 - x1;
         const h = yBottom - yTop;
+        const yMid = yTop + h * 0.5;
 
         // Fill
-        ctx.fillStyle = colors.fill;
+        ctx.fillStyle = COLORS.fill;
         ctx.fillRect(x1, yTop, w, h);
 
         // Border
-        ctx.strokeStyle = colors.border;
+        ctx.strokeStyle = COLORS.border;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x1, yTop, w, h);
 
-        // Horizontal grid lines (price subdivisions)
-        ctx.strokeStyle = colors.grid;
-        ctx.lineWidth = 0.8;
-        ctx.setLineDash([4, 4]);
-        for (const frac of SUBDIVISIONS) {
-          const y = yTop + h * frac;
-          ctx.beginPath();
-          ctx.moveTo(x1, y);
-          ctx.lineTo(x2, y);
-          ctx.stroke();
-        }
-
-        // Vertical grid lines (time subdivisions)
-        for (const frac of SUBDIVISIONS) {
-          const x = x1 + w * frac;
-          ctx.beginPath();
-          ctx.moveTo(x, yTop);
-          ctx.lineTo(x, yBottom);
-          ctx.stroke();
-        }
-        ctx.setLineDash([]);
-
-        // Diagonal lines
-        ctx.strokeStyle = colors.diagonal;
+        // Midline (premium/discount separator)
+        ctx.strokeStyle = COLORS.midline;
         ctx.lineWidth = 1;
-
-        // 1x1 diagonal (corner to corner)
+        ctx.setLineDash([6, 4]);
         ctx.beginPath();
-        ctx.moveTo(x1, yBottom);
-        ctx.lineTo(x2, yTop);
+        ctx.moveTo(x1, yMid);
+        ctx.lineTo(x2, yMid);
         ctx.stroke();
-
-        // 2x1 diagonal (steeper — reaches top at midpoint of time)
-        ctx.beginPath();
-        ctx.moveTo(x1, yBottom);
-        ctx.lineTo(x1 + w * 0.5, yTop);
-        ctx.stroke();
-
-        // 1x2 diagonal (shallower — reaches midpoint of price at end of time)
-        ctx.beginPath();
-        ctx.moveTo(x1, yBottom);
-        ctx.lineTo(x2, yTop + h * 0.5);
-        ctx.stroke();
+        ctx.setLineDash([]);
       }
     });
   }
@@ -126,7 +80,7 @@ class GannBoxesPaneView {
         x2,
         yTop,
         yBottom,
-        colors: COLORS[gann.direction] || COLORS.bullish,
+        direction: gann.direction,
       });
     }
 
