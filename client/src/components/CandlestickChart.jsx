@@ -3,6 +3,7 @@ import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
 import { GannBoxesPrimitive } from './GannBoxesPrimitive';
+import { HTF_MAP } from '../context/dashboardStore';
 
 function toChartTime(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -65,6 +66,33 @@ function normalizeGannSignals(signals) {
     .filter((s) => s.start_timestamp !== null && s.end_timestamp !== null);
 }
 
+function computeHTFBias(htfBosSignals, htfGannSignals, htfLatestClose) {
+  // BOS bias: direction of the most recent signal
+  let bosBias = null;
+  if (htfBosSignals.length > 0) {
+    bosBias = htfBosSignals[htfBosSignals.length - 1].direction;
+  }
+
+  // Gann bias: premium (above midpoint) = bearish, discount (below) = bullish
+  let gannBias = null;
+  if (htfGannSignals.length > 0 && htfLatestClose != null) {
+    const latest = htfGannSignals[htfGannSignals.length - 1];
+    const midpoint = (latest.high_price + latest.low_price) / 2;
+    gannBias = htfLatestClose >= midpoint ? 'bearish' : 'bullish';
+  }
+
+  // Combined: agree → that direction, disagree → null, one exists → use it
+  if (bosBias && gannBias) {
+    return bosBias === gannBias ? bosBias : null;
+  }
+  return bosBias || gannBias;
+}
+
+function filterByBias(signals, bias) {
+  if (!bias) return signals;
+  return signals.filter((s) => s.direction === bias);
+}
+
 function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
   const [error, setError] = useState('');
   const chartContainerRef = useRef(null);
@@ -76,6 +104,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
   const gannDataRef = useRef([]);
+  const htfBiasRef = useRef(null);
   const requestVersionRef = useRef(0);
   const showBOSRef = useRef(showBOS);
   const showFVGRef = useRef(showFVG);
@@ -187,8 +216,8 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
           seriesRef.current.setData(formatted);
           chartRef.current.timeScale().fitContent();
 
-          // Fetch BOS and FVG signals in parallel without blocking candle rendering.
-          const [bosResult, fvgResult, gannResult] = await Promise.allSettled([
+          // Fetch current-TF analysis signals in parallel.
+          const fetchPromises = [
             fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`, {
               signal: abortController.signal,
             }),
@@ -198,11 +227,31 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
             fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}`, {
               signal: abortController.signal,
             }),
-          ]);
+          ];
+
+          // If there's a higher timeframe, also fetch HTF BOS, Gann, and candles for bias.
+          const htfInterval = HTF_MAP[interval] || null;
+          if (htfInterval) {
+            fetchPromises.push(
+              fetch(`/api/analysis/bos?pair=${pair}&interval=${htfInterval}`, {
+                signal: abortController.signal,
+              }),
+              fetch(`/api/analysis/gann?pair=${pair}&interval=${htfInterval}`, {
+                signal: abortController.signal,
+              }),
+              fetch(`/api/candles?pair=${pair}&interval=${htfInterval}`, {
+                signal: abortController.signal,
+              }),
+            );
+          }
+
+          const results = await Promise.allSettled(fetchPromises);
 
           if (requestVersion !== requestVersionRef.current || abortController.signal.aborted) {
             return;
           }
+
+          const [bosResult, fvgResult, gannResult] = results;
 
           if (bosResult.status === 'fulfilled' && bosResult.value.ok) {
             const bosData = await bosResult.value.json();
@@ -225,14 +274,48 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
             gannDataRef.current = [];
           }
 
+          // Compute HTF bias if a higher timeframe was fetched.
+          htfBiasRef.current = null;
+          if (htfInterval) {
+            const [htfBosResult, htfGannResult, htfCandlesResult] = results.slice(3);
+            let htfBosSignals = [];
+            let htfGannSignals = [];
+            let htfLatestClose = null;
+
+            if (htfBosResult.status === 'fulfilled' && htfBosResult.value.ok) {
+              const d = await htfBosResult.value.json();
+              htfBosSignals = d.signals || [];
+            }
+            if (htfGannResult.status === 'fulfilled' && htfGannResult.value.ok) {
+              const d = await htfGannResult.value.json();
+              htfGannSignals = d.signals || [];
+            }
+            if (htfCandlesResult.status === 'fulfilled' && htfCandlesResult.value.ok) {
+              const d = await htfCandlesResult.value.json();
+              const candles = d.candles || [];
+              if (candles.length > 0) {
+                htfLatestClose = candles[candles.length - 1].close;
+              }
+            }
+
+            htfBiasRef.current = computeHTFBias(htfBosSignals, htfGannSignals, htfLatestClose);
+          }
+
+          const bias = htfBiasRef.current;
           if (bosPrimitiveRef.current) {
-            bosPrimitiveRef.current.setLines(showBOSRef.current ? bosDataRef.current : []);
+            bosPrimitiveRef.current.setLines(
+              showBOSRef.current ? filterByBias(bosDataRef.current, bias) : [],
+            );
           }
           if (fvgPrimitiveRef.current) {
-            fvgPrimitiveRef.current.setZones(showFVGRef.current ? fvgDataRef.current : []);
+            fvgPrimitiveRef.current.setZones(
+              showFVGRef.current ? filterByBias(fvgDataRef.current, bias) : [],
+            );
           }
           if (gannPrimitiveRef.current) {
-            gannPrimitiveRef.current.setBoxes(showGannRef.current ? gannDataRef.current : []);
+            gannPrimitiveRef.current.setBoxes(
+              showGannRef.current ? filterByBias(gannDataRef.current, bias) : [],
+            );
           }
         }
       } catch (error) {
@@ -250,22 +333,28 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann }) {
     };
   }, [pair, interval]);
 
-  // Toggle overlays without re-fetching
+  // Toggle overlays without re-fetching (apply HTF bias filter)
   useEffect(() => {
     if (bosPrimitiveRef.current) {
-      bosPrimitiveRef.current.setLines(showBOS ? bosDataRef.current : []);
+      bosPrimitiveRef.current.setLines(
+        showBOS ? filterByBias(bosDataRef.current, htfBiasRef.current) : [],
+      );
     }
   }, [showBOS]);
 
   useEffect(() => {
     if (fvgPrimitiveRef.current) {
-      fvgPrimitiveRef.current.setZones(showFVG ? fvgDataRef.current : []);
+      fvgPrimitiveRef.current.setZones(
+        showFVG ? filterByBias(fvgDataRef.current, htfBiasRef.current) : [],
+      );
     }
   }, [showFVG]);
 
   useEffect(() => {
     if (gannPrimitiveRef.current) {
-      gannPrimitiveRef.current.setBoxes(showGann ? gannDataRef.current : []);
+      gannPrimitiveRef.current.setBoxes(
+        showGann ? filterByBias(gannDataRef.current, htfBiasRef.current) : [],
+      );
     }
   }, [showGann]);
 

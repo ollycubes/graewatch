@@ -9,6 +9,14 @@ export const INTERVALS = [
   { label: '15min', value: '15min' },
 ];
 
+export const HTF_MAP = {
+  '15min': '1h',
+  '1h': '4h',
+  '4h': 'daily',
+  'daily': 'weekly',
+  'weekly': null,
+};
+
 export const initialState = {
   pair: 'EUR/USD',
   interval: 'daily',
