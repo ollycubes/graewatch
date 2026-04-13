@@ -19,7 +19,7 @@ function formatPrice(p) {
 }
 
 function SummaryPanel({ pair, interval }) {
-  const [summary, setSummary] = useState({ bos: [], fvg: [], gann: [] });
+  const [summary, setSummary] = useState({ bos: [], fvg: [], gann: [], ob: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,7 +33,7 @@ function SummaryPanel({ pair, interval }) {
       setError('');
 
       try {
-        const [bosRes, fvgRes, gannRes] = await Promise.all([
+        const [bosRes, fvgRes, gannRes, obRes] = await Promise.all([
           fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`, {
             signal: abortController.signal,
           }),
@@ -43,17 +43,21 @@ function SummaryPanel({ pair, interval }) {
           fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}`, {
             signal: abortController.signal,
           }),
+          fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}`, {
+            signal: abortController.signal,
+          }),
         ]);
 
-        if (!bosRes.ok || !fvgRes.ok || !gannRes.ok) {
+        if (!bosRes.ok || !fvgRes.ok || !gannRes.ok || !obRes.ok) {
           throw new Error('Unable to load summary signals');
         }
 
-        const [bos, fvg, gann] = await Promise.all([bosRes.json(), fvgRes.json(), gannRes.json()]);
+        const [bos, fvg, gann, ob] = await Promise.all([bosRes.json(), fvgRes.json(), gannRes.json(), obRes.json()]);
         setSummary({
           bos: bos.signals || [],
           fvg: fvg.signals || [],
           gann: gann.signals || [],
+          ob: ob.signals || [],
         });
       } catch (err) {
         if (err?.name !== 'AbortError') {
@@ -76,6 +80,7 @@ function SummaryPanel({ pair, interval }) {
   const recentBos = [...summary.bos].reverse().slice(0, MAX_SIGNALS);
   const recentFvg = [...summary.fvg].reverse().slice(0, MAX_SIGNALS);
   const recentGann = [...summary.gann].reverse().slice(0, MAX_SIGNALS);
+  const recentOB = [...summary.ob].reverse().slice(0, MAX_SIGNALS);
 
   return (
     <aside className="summary-panel" aria-live="polite">
@@ -131,6 +136,23 @@ function SummaryPanel({ pair, interval }) {
                   <li key={i}>
                     {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} box{' '}
                     {formatPrice(s.low_price)}–{formatPrice(s.high_price)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="summary-panel__section">
+            <h3>OB ({summary.ob.length})</h3>
+            {recentOB.length === 0 ? (
+              <p className="summary-panel__count">No order blocks</p>
+            ) : (
+              <ul className="summary-panel__list">
+                {recentOB.map((s, i) => (
+                  <li key={i}>
+                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} OB{' '}
+                    {formatPrice(s.bottom)}–{formatPrice(s.top)}
+                    {s.end_timestamp ? ' (mitigated)' : ''}
                   </li>
                 ))}
               </ul>

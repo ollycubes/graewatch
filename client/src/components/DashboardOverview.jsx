@@ -45,6 +45,7 @@ function DashboardOverview() {
             showBOS={state.overlays.bos}
             showFVG={state.overlays.fvg}
             showGann={state.overlays.gann}
+            showOB={state.overlays.orderblocks}
           />
         </div>
 

@@ -34,6 +34,15 @@ function OverlayToggles() {
         />
         <span>Gann</span>
       </label>
+
+      <label className="control control--toggle">
+        <input
+          type="checkbox"
+          checked={state.overlays.orderblocks}
+          onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'orderblocks' })}
+        />
+        <span>OB</span>
+      </label>
     </>
   );
 }

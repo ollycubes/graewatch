@@ -24,6 +24,7 @@ export const initialState = {
     bos: true,
     fvg: true,
     gann: true,
+    orderblocks: true,
   },
 };
 
