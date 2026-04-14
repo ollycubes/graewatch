@@ -58,6 +58,7 @@ async def get_prediction(
     fvg_signals = COMPONENTS["fvg"](candles)
     gann_signals = COMPONENTS["gann"](candles)
     ob_signals = COMPONENTS["orderblocks"](candles)
+    liq_signals = COMPONENTS["liquidity"](candles)
 
     # ── HTF data for bias ────────────────────────────────────────────────
     htf_bos_signals = None
@@ -83,6 +84,7 @@ async def get_prediction(
         fvg_signals=fvg_signals,
         gann_signals=gann_signals,
         ob_signals=ob_signals,
+        liq_signals=liq_signals,
         htf_bos_signals=htf_bos_signals,
         htf_gann_signals=htf_gann_signals,
         htf_candles=htf_candles,

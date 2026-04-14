@@ -1,4 +1,154 @@
+from __future__ import annotations
+
+
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
-    """Placeholder liquidity sweep detector."""
-    _ = candles
-    return []
+    """
+    Detect liquidity sweeps — price wicks beyond a swing high/low then closes
+    back inside, indicating a stop hunt / liquidity grab.
+
+    Two sub-types:
+        1. Swing sweeps: wick beyond any confirmed swing, close back inside.
+        2. Equal highs/lows (pools): clusters of swings at nearly the same
+           price. Swept pools are flagged with pool=True.
+
+    Direction follows the expected move AFTER the sweep:
+        - Sweep above a swing high → bearish (grabbed longs' stops, expect down)
+        - Sweep below a swing low  → bullish (grabbed shorts' stops, expect up)
+
+    Returns a list of dicts:
+        - source_timestamp: timestamp of the swing that formed the level
+        - timestamp:        timestamp of the sweep candle
+        - direction:        "bullish" or "bearish" (expected move after sweep)
+        - price:            the swept swing price level
+        - pool:             True if the level was part of an equal highs/lows cluster
+    """
+    N = 3  # lookback for swing detection (consistent with BOS / Gann / OB)
+
+    swing_highs = []
+    swing_lows = []
+
+    # ── Step 1: Identify swing highs and swing lows ────────────────────────
+    for i in range(N, len(candles) - N):
+        candle = candles[i]
+
+        is_swing_high = all(
+            candle["high"] > candles[i - j]["high"]
+            and candle["high"] > candles[i + j]["high"]
+            for j in range(1, N + 1)
+        )
+
+        is_swing_low = all(
+            candle["low"] < candles[i - j]["low"]
+            and candle["low"] < candles[i + j]["low"]
+            for j in range(1, N + 1)
+        )
+
+        if is_swing_high:
+            swing_highs.append({
+                "index": i,
+                "timestamp": candle["timestamp"],
+                "price": candle["high"],
+            })
+
+        if is_swing_low:
+            swing_lows.append({
+                "index": i,
+                "timestamp": candle["timestamp"],
+                "price": candle["low"],
+            })
+
+    # ── Step 2: Compute ATR for equal-level tolerance ──────────────────────
+    atr = _compute_atr(candles, period=14)
+    tolerance = atr * 0.1
+
+    # ── Step 3: Mark equal highs / equal lows (pools) ──────────────────────
+    _mark_pools(swing_highs, tolerance)
+    _mark_pools(swing_lows, tolerance)
+
+    # ── Step 4: Scan for sweeps ────────────────────────────────────────────
+    events = []
+
+    # Track active (un-swept) swing levels
+    active_highs = []
+    active_lows = []
+    high_idx = 0
+    low_idx = 0
+
+    for i in range(len(candles)):
+        candle = candles[i]
+
+        # Activate swings that are now confirmed (N bars after the swing)
+        while high_idx < len(swing_highs) and swing_highs[high_idx]["index"] + N <= i:
+            active_highs.append(swing_highs[high_idx])
+            high_idx += 1
+
+        while low_idx < len(swing_lows) and swing_lows[low_idx]["index"] + N <= i:
+            active_lows.append(swing_lows[low_idx])
+            low_idx += 1
+
+        # Check for sweeps of active highs (wick above, close below)
+        swept_high_indices = []
+        for ah_i, ah in enumerate(active_highs):
+            if candle["high"] > ah["price"] and candle["close"] < ah["price"]:
+                events.append({
+                    "source_timestamp": ah["timestamp"],
+                    "timestamp": candle["timestamp"],
+                    "direction": "bearish",
+                    "price": ah["price"],
+                    "pool": ah.get("pool", False),
+                })
+                swept_high_indices.append(ah_i)
+
+        # Check for sweeps of active lows (wick below, close above)
+        swept_low_indices = []
+        for al_i, al in enumerate(active_lows):
+            if candle["low"] < al["price"] and candle["close"] > al["price"]:
+                events.append({
+                    "source_timestamp": al["timestamp"],
+                    "timestamp": candle["timestamp"],
+                    "direction": "bullish",
+                    "price": al["price"],
+                    "pool": al.get("pool", False),
+                })
+                swept_low_indices.append(al_i)
+
+        # Remove swept levels (iterate in reverse to preserve indices)
+        for idx in reversed(swept_high_indices):
+            active_highs.pop(idx)
+        for idx in reversed(swept_low_indices):
+            active_lows.pop(idx)
+
+    return events
+
+
+def _compute_atr(candles, period=14):
+    """Simple Average True Range calculation."""
+    if len(candles) < 2:
+        return 0.0
+
+    true_ranges = []
+    for i in range(1, len(candles)):
+        high = candles[i]["high"]
+        low = candles[i]["low"]
+        prev_close = candles[i - 1]["close"]
+        tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
+        true_ranges.append(tr)
+
+    recent = true_ranges[-period:]
+    return sum(recent) / len(recent) if recent else 0.0
+
+
+def _mark_pools(swings, tolerance):
+    """
+    Mark swings that are part of an equal highs/lows cluster (pool).
+    Two or more swings within `tolerance` of each other form a pool.
+    Mutates each swing dict in-place, setting pool=True where applicable.
+    """
+    if tolerance <= 0:
+        return
+
+    for i, a in enumerate(swings):
+        for b in swings[i + 1:]:
+            if abs(a["price"] - b["price"]) <= tolerance:
+                a["pool"] = True
+                b["pool"] = True

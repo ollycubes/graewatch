@@ -1,7 +1,7 @@
 """
 Confluence-based next-period price prediction engine.
 
-Combines signals from BOS, FVG, Gann, and Order Blocks with higher-timeframe
+Combines signals from BOS, FVG, Gann, Order Blocks, and Liquidity Sweeps with higher-timeframe
 bias to produce a directional forecast, confidence score, target price range,
 and a breakdown of which signals contributed.
 """
@@ -10,11 +10,12 @@ from __future__ import annotations
 
 # ── Weight table (must sum to 1.0) ───────────────────────────────────────
 WEIGHTS = {
-    "htf_bos": 0.30,
+    "htf_bos": 0.25,
     "current_bos": 0.20,
     "nearest_fvg": 0.15,
-    "nearest_ob": 0.15,
+    "nearest_ob": 0.10,
     "gann_position": 0.20,
+    "recent_liq": 0.10,
 }
 
 
@@ -24,6 +25,7 @@ def predict(
     fvg_signals: list[dict],
     gann_signals: list[dict],
     ob_signals: list[dict],
+    liq_signals: list[dict] | None = None,
     htf_bos_signals: list[dict] | None = None,
     htf_gann_signals: list[dict] | None = None,
     htf_candles: list[dict] | None = None,
@@ -63,6 +65,12 @@ def predict(
     # ── 5. Gann position — premium/discount ──────────────────────────────
     gann_dir = _gann_bias(gann_signals, current_close)
     votes["gann_position"] = gann_dir
+
+    # ── 6. Most recent liquidity sweep ─────────────────────────────────
+    liq_dir = None
+    if liq_signals:
+        liq_dir = liq_signals[-1].get("direction")
+    votes["recent_liq"] = liq_dir
 
     # ── Compute weighted confluence ──────────────────────────────────────
     bullish_score = 0.0
@@ -259,4 +267,5 @@ def _build_signals_breakdown(
         signals["nearest_ob"] = None
 
     signals["gann_position"] = votes.get("gann_position")
+    signals["recent_liq"] = votes.get("recent_liq")
     return signals

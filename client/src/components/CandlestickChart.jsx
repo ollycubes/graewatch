@@ -4,6 +4,7 @@ import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
 import { GannBoxesPrimitive } from './GannBoxesPrimitive';
 import { OBBoxesPrimitive } from './OBBoxesPrimitive';
+import { LiquidityLinesPrimitive } from './LiquidityLinesPrimitive';
 import { PredictionZonePrimitive } from './PredictionZonePrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
 
@@ -78,6 +79,16 @@ function normalizeOBSignals(signals) {
     .filter((s) => s.timestamp !== null);
 }
 
+function normalizeLiqSignals(signals) {
+  return signals
+    .map((s) => ({
+      ...s,
+      source_timestamp: toChartTime(s.source_timestamp),
+      timestamp: toChartTime(s.timestamp),
+    }))
+    .filter((s) => s.source_timestamp !== null && s.timestamp !== null);
+}
+
 function computeHTFBias(htfBosSignals, htfGannSignals, htfLatestClose) {
   // BOS bias: direction of the most recent signal
   let bosBias = null;
@@ -105,7 +116,7 @@ function filterByBias(signals, bias) {
   return signals.filter((s) => s.direction === bias);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }) {
+function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq }) {
   const [error, setError] = useState('');
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
@@ -114,17 +125,20 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
   const fvgPrimitiveRef = useRef(null);
   const gannPrimitiveRef = useRef(null);
   const obPrimitiveRef = useRef(null);
+  const liqPrimitiveRef = useRef(null);
   const predictionPrimitiveRef = useRef(null);
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
   const gannDataRef = useRef([]);
   const obDataRef = useRef([]);
+  const liqDataRef = useRef([]);
   const htfBiasRef = useRef(null);
   const requestVersionRef = useRef(0);
   const showBOSRef = useRef(showBOS);
   const showFVGRef = useRef(showFVG);
   const showGannRef = useRef(showGann);
   const showOBRef = useRef(showOB);
+  const showLiqRef = useRef(showLiq);
 
   useEffect(() => {
     showBOSRef.current = showBOS;
@@ -141,6 +155,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
   useEffect(() => {
     showOBRef.current = showOB;
   }, [showOB]);
+
+  useEffect(() => {
+    showLiqRef.current = showLiq;
+  }, [showLiq]);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -192,6 +210,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
     const obPrimitive = new OBBoxesPrimitive();
     series.attachPrimitive(obPrimitive);
     obPrimitiveRef.current = obPrimitive;
+
+    const liqPrimitive = new LiquidityLinesPrimitive();
+    series.attachPrimitive(liqPrimitive);
+    liqPrimitiveRef.current = liqPrimitive;
 
     const predictionPrimitive = new PredictionZonePrimitive();
     series.attachPrimitive(predictionPrimitive);
@@ -258,6 +280,9 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
             fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}`, {
               signal: abortController.signal,
             }),
+            fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}`, {
+              signal: abortController.signal,
+            }),
           ];
 
           // If there's a higher timeframe, also fetch HTF BOS, Gann, and candles for bias.
@@ -282,7 +307,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
             return;
           }
 
-          const [bosResult, fvgResult, gannResult, obResult] = results;
+          const [bosResult, fvgResult, gannResult, obResult, liqResult] = results;
 
           if (bosResult.status === 'fulfilled' && bosResult.value.ok) {
             const bosData = await bosResult.value.json();
@@ -312,10 +337,17 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
             obDataRef.current = [];
           }
 
+          if (liqResult.status === 'fulfilled' && liqResult.value.ok) {
+            const liqData = await liqResult.value.json();
+            liqDataRef.current = normalizeLiqSignals(liqData.signals || []);
+          } else {
+            liqDataRef.current = [];
+          }
+
           // Compute HTF bias if a higher timeframe was fetched.
           htfBiasRef.current = null;
           if (htfInterval) {
-            const [htfBosResult, htfGannResult, htfCandlesResult] = results.slice(4);
+            const [htfBosResult, htfGannResult, htfCandlesResult] = results.slice(5);
             let htfBosSignals = [];
             let htfGannSignals = [];
             let htfLatestClose = null;
@@ -358,6 +390,11 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
           if (obPrimitiveRef.current) {
             obPrimitiveRef.current.setZones(
               showOBRef.current ? filterByBias(obDataRef.current, bias) : [],
+            );
+          }
+          if (liqPrimitiveRef.current) {
+            liqPrimitiveRef.current.setLines(
+              showLiqRef.current ? filterByBias(liqDataRef.current, bias) : [],
             );
           }
 
@@ -424,6 +461,14 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB }
       );
     }
   }, [showOB]);
+
+  useEffect(() => {
+    if (liqPrimitiveRef.current) {
+      liqPrimitiveRef.current.setLines(
+        showLiq ? filterByBias(liqDataRef.current, htfBiasRef.current) : [],
+      );
+    }
+  }, [showLiq]);
 
   return (
     <div style={{ width: '100%' }}>

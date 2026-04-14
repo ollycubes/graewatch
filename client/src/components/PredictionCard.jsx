@@ -13,6 +13,7 @@ const SIGNAL_LABELS = {
   nearest_fvg: 'FVG Zone',
   nearest_ob: 'OB Zone',
   gann_position: 'Gann',
+  recent_liq: 'Liquidity',
 };
 
 function SignalChip({ label, value }) {

@@ -25,6 +25,7 @@ export const initialState = {
     fvg: true,
     gann: true,
     orderblocks: true,
+    liquidity: true,
   },
 };
 

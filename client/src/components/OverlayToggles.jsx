@@ -43,6 +43,15 @@ function OverlayToggles() {
         />
         <span>OB</span>
       </label>
+
+      <label className="control control--toggle">
+        <input
+          type="checkbox"
+          checked={state.overlays.liquidity}
+          onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'liquidity' })}
+        />
+        <span>Liq</span>
+      </label>
     </>
   );
 }
