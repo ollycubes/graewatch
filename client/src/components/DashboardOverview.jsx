@@ -14,9 +14,6 @@ function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();
   const currentStepDef = CHECKLIST_STEPS[state.checklist.currentStep];
 
-  // Show prediction card only at the final step (15M entry trigger)
-  const showPrediction = state.checklist.currentStep >= 4;
-
   // Handle selection box changes from the chart
   const handleSelectionChange = useCallback(
     (sel) => {
@@ -67,6 +64,10 @@ function DashboardOverview() {
         </div>
       </div>
 
+      <div className="dashboard__prediction-bar">
+        <PredictionCard pair={state.pair} interval={state.interval} />
+      </div>
+
       <div className="dashboard__content">
         <ChecklistSidebar />
 
@@ -84,12 +85,6 @@ function DashboardOverview() {
               onSelectionChange={handleSelectionChange}
             />
           </div>
-
-          {showPrediction && (
-            <div className="dashboard__sidebar">
-              <PredictionCard pair={state.pair} interval={state.interval} />
-            </div>
-          )}
         </div>
       </div>
 

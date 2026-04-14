@@ -931,6 +931,68 @@ body {
   }
 }
 
+/* ── Prediction Bar (above chart) ── */
+
+.dashboard__prediction-bar {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.dashboard__prediction-bar .prediction-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard__prediction-bar .prediction-card h2,
+.dashboard__prediction-bar .prediction-card__meta {
+  display: none;
+}
+
+.dashboard__prediction-bar .prediction-card__hero {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  flex: 1;
+}
+
+.dashboard__prediction-bar .prediction-card__dir-row {
+  gap: 12px;
+}
+
+.dashboard__prediction-bar .prediction-card__range {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 4px 10px;
+}
+
+.dashboard__prediction-bar .prediction-card__range-row {
+  border-top: none !important;
+  padding: 0;
+  gap: 4px;
+}
+
+.dashboard__prediction-bar .prediction-card__signals {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashboard__prediction-bar .prediction-card__signals h3 {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.dashboard__prediction-bar .prediction-card__chips {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
 /* ── Prediction Card ── */
 
 .prediction-card {
