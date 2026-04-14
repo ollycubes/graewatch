@@ -65,7 +65,7 @@ function DashboardOverview() {
       </div>
 
       <div className="dashboard__prediction-bar">
-        <PredictionCard pair={state.pair} interval={state.interval} />
+        <PredictionCard pair={state.pair} interval={state.interval} selection={state.selection} />
       </div>
 
       <div className="dashboard__content">

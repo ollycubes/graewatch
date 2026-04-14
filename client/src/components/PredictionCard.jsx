@@ -82,7 +82,7 @@ function ConfidenceGauge({ confidence, direction }) {
   );
 }
 
-function PredictionCard({ pair, interval }) {
+function PredictionCard({ pair, interval, selection }) {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,10 +94,11 @@ function PredictionCard({ pair, interval }) {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(
-          `/api/prediction?pair=${pair}&interval=${interval}`,
-          { signal: abortController.signal },
-        );
+        let url = `/api/prediction?pair=${pair}&interval=${interval}`;
+        if (selection) {
+          url += `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
+        }
+        const res = await fetch(url, { signal: abortController.signal });
         if (!res.ok) throw new Error(`Prediction failed: ${res.status}`);
         const data = await res.json();
         setPrediction(data);
@@ -114,7 +115,7 @@ function PredictionCard({ pair, interval }) {
 
     fetchPrediction();
     return () => abortController.abort();
-  }, [pair, interval]);
+  }, [pair, interval, selection]);
 
   if (loading) {
     return (

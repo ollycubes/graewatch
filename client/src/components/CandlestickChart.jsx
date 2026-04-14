@@ -196,6 +196,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
       borderDownColor: '#000000',
       wickUpColor: '#000000',
       wickDownColor: '#000000',
+      priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
     });
 
     chartRef.current = chart;
