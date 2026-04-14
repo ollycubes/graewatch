@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
-import { BOSLinesPrimitive } from './BOSLinesPrimitive';
-import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
-import { GannBoxesPrimitive } from './GannBoxesPrimitive';
-import { OBBoxesPrimitive } from './OBBoxesPrimitive';
-import { LiquidityLinesPrimitive } from './LiquidityLinesPrimitive';
-import { PredictionZonePrimitive } from './PredictionZonePrimitive';
-import { SelectionBoxPrimitive } from './SelectionBoxPrimitive';
+import { BOSLinesPrimitive } from './primitives/BOSLinesPrimitive';
+import { FVGBoxesPrimitive } from './primitives/FVGBoxesPrimitive';
+import { GannBoxesPrimitive } from './primitives/GannBoxesPrimitive';
+import { OBBoxesPrimitive } from './primitives/OBBoxesPrimitive';
+import { LiquidityLinesPrimitive } from './primitives/LiquidityLinesPrimitive';
+import { PredictionZonePrimitive } from './primitives/PredictionZonePrimitive';
+import { SelectionBoxPrimitive } from './primitives/SelectionBoxPrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
 
 function toChartTime(value) {
