@@ -495,6 +495,34 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   }, [showLiq]);
 
   // ── Selection mode mouse handlers ─────────────────────────────────────
+  // When the user drags beyond visible candle data, coordinateToTime()
+  // returns null. This helper clamps to the first/last candle so the
+  // selection always registers.
+  const clampTime = useCallback((rawTime, x) => {
+    if (rawTime != null) return rawTime;
+    const candles = candleDataRef.current;
+    if (candles.length === 0) return null;
+    // If the pixel x is near the left edge, clamp to the first candle;
+    // otherwise clamp to the last.
+    const container = chartContainerRef.current;
+    if (!container) return null;
+    const midX = container.clientWidth / 2;
+    return x < midX ? candles[0].time : candles[candles.length - 1].time;
+  }, []);
+
+  const clampPrice = useCallback((rawPrice, y) => {
+    if (rawPrice != null) return rawPrice;
+    const candles = candleDataRef.current;
+    if (candles.length === 0) return null;
+    // Clamp to the overall high/low of the data
+    const container = chartContainerRef.current;
+    if (!container) return null;
+    const midY = container.clientHeight / 2;
+    const allHighs = candles.map((c) => c.high);
+    const allLows = candles.map((c) => c.low);
+    return y < midY ? Math.max(...allHighs) : Math.min(...allLows);
+  }, []);
+
   const handleMouseDown = useCallback((e) => {
     if (!isSelecting || !chartRef.current || !seriesRef.current) return;
     const rect = chartContainerRef.current.getBoundingClientRect();
@@ -514,10 +542,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     const timeScale = chartRef.current.timeScale();
     const series = seriesRef.current;
 
-    const t1 = timeScale.coordinateToTime(start.x);
-    const t2 = timeScale.coordinateToTime(x);
-    const p1 = series.coordinateToPrice(start.y);
-    const p2 = series.coordinateToPrice(y);
+    const t1 = clampTime(timeScale.coordinateToTime(start.x), start.x);
+    const t2 = clampTime(timeScale.coordinateToTime(x), x);
+    const p1 = clampPrice(series.coordinateToPrice(start.y), start.y);
+    const p2 = clampPrice(series.coordinateToPrice(y), y);
 
     if (t1 != null && t2 != null && p1 != null && p2 != null) {
       selectionPrimitiveRef.current?.setSelection({
@@ -528,7 +556,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
         candleCount: null, // computed on mouseup
       });
     }
-  }, []);
+  }, [clampTime, clampPrice]);
 
   const handleMouseUp = useCallback((e) => {
     if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
@@ -541,10 +569,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     const timeScale = chartRef.current.timeScale();
     const series = seriesRef.current;
 
-    const t1 = timeScale.coordinateToTime(start.x);
-    const t2 = timeScale.coordinateToTime(x);
-    const p1 = series.coordinateToPrice(start.y);
-    const p2 = series.coordinateToPrice(y);
+    const t1 = clampTime(timeScale.coordinateToTime(start.x), start.x);
+    const t2 = clampTime(timeScale.coordinateToTime(x), x);
+    const p1 = clampPrice(series.coordinateToPrice(start.y), start.y);
+    const p2 = clampPrice(series.coordinateToPrice(y), y);
 
     if (t1 != null && t2 != null && p1 != null && p2 != null) {
       const startTime = Math.min(t1, t2);
@@ -573,7 +601,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     }
 
     setIsSelecting(false);
-  }, [onSelectionChange]);
+  }, [onSelectionChange, clampTime, clampPrice]);
 
   // Attach/detach mouse listeners when selection mode changes
   useEffect(() => {
