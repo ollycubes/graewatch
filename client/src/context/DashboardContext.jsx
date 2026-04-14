@@ -1,10 +1,12 @@
 import { useMemo, useReducer } from 'react';
 import {
+  CHECKLIST_STEPS,
   DashboardContext,
   INTERVALS,
   PAIRS,
   dashboardReducer,
   initialState,
+  isStepComplete,
 } from './dashboardStore';
 
 export function DashboardProvider({ children }) {
@@ -16,6 +18,8 @@ export function DashboardProvider({ children }) {
       dispatch,
       pairs: PAIRS,
       intervals: INTERVALS,
+      steps: CHECKLIST_STEPS,
+      isStepComplete: (stepId) => isStepComplete(stepId, state.checklist.checked),
     }),
     [state],
   );

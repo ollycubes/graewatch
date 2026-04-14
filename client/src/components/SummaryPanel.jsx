@@ -1,7 +1,8 @@
 // Sidebar panel showing the most recent BOS and FVG signals for the selected pair/interval.
-// Fetches independently of CandlestickChart so the sidebar stays in sync even if
-// the chart is still loading.
+// Filters signals to only show those relevant to the current checklist step.
 import { useEffect, useState } from 'react';
+import { useDashboard } from '../context/useDashboard';
+import { CHECKLIST_STEPS } from '../context/dashboardStore';
 
 // Cap the list length so the sidebar doesn't grow unbounded on high-frequency intervals.
 const MAX_SIGNALS = 20;
@@ -19,9 +20,13 @@ function formatPrice(p) {
 }
 
 function SummaryPanel({ pair, interval }) {
+  const { state } = useDashboard();
   const [summary, setSummary] = useState({ bos: [], fvg: [], gann: [], ob: [], liq: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const currentStepDef = CHECKLIST_STEPS[state.checklist.currentStep];
+  const overlays = currentStepDef?.overlays || {};
 
   useEffect(() => {
     // AbortController cancels in-flight requests when pair/interval changes
@@ -89,7 +94,12 @@ function SummaryPanel({ pair, interval }) {
 
   return (
     <aside className="summary-panel" aria-live="polite">
-      <h2>Summary</h2>
+      <h2>
+        Summary
+        <span className="summary-panel__step-tag">
+          Step {state.checklist.currentStep} · {currentStepDef?.title}
+        </span>
+      </h2>
       <p className="summary-panel__meta">
         {pair} • {interval}
       </p>
@@ -99,87 +109,104 @@ function SummaryPanel({ pair, interval }) {
 
       {!loading && !error && (
         <>
-          <section className="summary-panel__section">
-            <h3>BOS ({summary.bos.length})</h3>
-            {recentBos.length === 0 ? (
-              <p className="summary-panel__count">No signals</p>
-            ) : (
-              <ul className="summary-panel__list">
-                {recentBos.map((s, i) => (
-                  <li key={i}>
-                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} break at{' '}
-                    {formatPrice(s.price)} on {formatDate(s.timestamp)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          {overlays.bos && (
+            <section className="summary-panel__section">
+              <h3>BOS ({summary.bos.length})</h3>
+              {recentBos.length === 0 ? (
+                <p className="summary-panel__count">No signals</p>
+              ) : (
+                <ul className="summary-panel__list">
+                  {recentBos.map((s, i) => (
+                    <li key={i}>
+                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} break at{' '}
+                      {formatPrice(s.price)} on {formatDate(s.timestamp)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
-          <section className="summary-panel__section">
-            <h3>FVG ({summary.fvg.length})</h3>
-            {recentFvg.length === 0 ? (
-              <p className="summary-panel__count">No zones</p>
-            ) : (
-              <ul className="summary-panel__list">
-                {recentFvg.map((s, i) => (
-                  <li key={i}>
-                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} gap between{' '}
-                    {formatPrice(s.bottom)}–{formatPrice(s.top)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          {overlays.fvg && (
+            <section className="summary-panel__section">
+              <h3>FVG ({summary.fvg.length})</h3>
+              {recentFvg.length === 0 ? (
+                <p className="summary-panel__count">No zones</p>
+              ) : (
+                <ul className="summary-panel__list">
+                  {recentFvg.map((s, i) => (
+                    <li key={i}>
+                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} gap between{' '}
+                      {formatPrice(s.bottom)}–{formatPrice(s.top)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
-          <section className="summary-panel__section">
-            <h3>Gann ({summary.gann.length})</h3>
-            {recentGann.length === 0 ? (
-              <p className="summary-panel__count">No boxes</p>
-            ) : (
-              <ul className="summary-panel__list">
-                {recentGann.map((s, i) => (
-                  <li key={i}>
-                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} box{' '}
-                    {formatPrice(s.low_price)}–{formatPrice(s.high_price)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          {overlays.gann && (
+            <section className="summary-panel__section">
+              <h3>Gann ({summary.gann.length})</h3>
+              {recentGann.length === 0 ? (
+                <p className="summary-panel__count">No boxes</p>
+              ) : (
+                <ul className="summary-panel__list">
+                  {recentGann.map((s, i) => (
+                    <li key={i}>
+                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} box{' '}
+                      {formatPrice(s.low_price)}–{formatPrice(s.high_price)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
-          <section className="summary-panel__section">
-            <h3>OB ({summary.ob.length})</h3>
-            {recentOB.length === 0 ? (
-              <p className="summary-panel__count">No order blocks</p>
-            ) : (
-              <ul className="summary-panel__list">
-                {recentOB.map((s, i) => (
-                  <li key={i}>
-                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} OB{' '}
-                    {formatPrice(s.bottom)}–{formatPrice(s.top)}
-                    {s.end_timestamp ? ' (mitigated)' : ''}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          {overlays.orderblocks && (
+            <section className="summary-panel__section">
+              <h3>OB ({summary.ob.length})</h3>
+              {recentOB.length === 0 ? (
+                <p className="summary-panel__count">No order blocks</p>
+              ) : (
+                <ul className="summary-panel__list">
+                  {recentOB.map((s, i) => (
+                    <li key={i}>
+                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} OB{' '}
+                      {formatPrice(s.bottom)}–{formatPrice(s.top)}
+                      {s.end_timestamp ? ' (mitigated)' : ''}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
-          <section className="summary-panel__section">
-            <h3>Liquidity ({summary.liq.length})</h3>
-            {recentLiq.length === 0 ? (
-              <p className="summary-panel__count">No sweeps</p>
-            ) : (
-              <ul className="summary-panel__list">
-                {recentLiq.map((s, i) => (
-                  <li key={i}>
-                    {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} sweep at{' '}
-                    {formatPrice(s.price)}
-                    {s.pool ? ' (pool)' : ''}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          {overlays.liquidity && (
+            <section className="summary-panel__section">
+              <h3>Liquidity ({summary.liq.length})</h3>
+              {recentLiq.length === 0 ? (
+                <p className="summary-panel__count">No sweeps</p>
+              ) : (
+                <ul className="summary-panel__list">
+                  {recentLiq.map((s, i) => (
+                    <li key={i}>
+                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} sweep at{' '}
+                      {formatPrice(s.price)}
+                      {s.pool ? ' (pool)' : ''}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {/* Show a hint when no overlays are active (e.g. Step 0) */}
+          {!Object.values(overlays).some(Boolean) && (
+            <p className="summary-panel__count" style={{ fontStyle: 'italic' }}>
+              Complete pre-flight checks to begin analysis
+            </p>
+          )}
         </>
       )}
     </aside>

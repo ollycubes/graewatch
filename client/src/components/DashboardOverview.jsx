@@ -1,21 +1,31 @@
 // Root layout component for the dashboard.
-// Reads shared state from context and wires up the interval selector here
-// (pair and overlay toggles are self-contained in their own components).
+// Uses the checklist sidebar instead of overlay toggles.
+// The chart and sidebar render based on the current checklist step.
 import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
-import OverlayToggles from './OverlayToggles';
+import ChecklistSidebar from './ChecklistSidebar';
 import SummaryPanel from './SummaryPanel';
 import PredictionCard from './PredictionCard';
 import { useDashboard } from '../context/useDashboard';
+import { CHECKLIST_STEPS } from '../context/dashboardStore';
 
 function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();
+  const currentStepDef = CHECKLIST_STEPS[state.checklist.currentStep];
+
+  // Show prediction card only at trade management step (step 6)
+  const showPrediction = state.checklist.currentStep >= 6;
 
   return (
     <section className="dashboard__panel">
       <header className="dashboard__header">
         <h1>Graewatch</h1>
-        <p>Live market structure overview</p>
+        <p>
+          Top-down SMC analysis ·{' '}
+          <span className="dashboard__step-badge">
+            Step {state.checklist.currentStep}: {currentStepDef?.title}
+          </span>
+        </p>
       </header>
 
       <div className="dashboard__controls" aria-label="Chart controls">
@@ -35,24 +45,36 @@ function DashboardOverview() {
           </select>
         </label>
 
-        <OverlayToggles />
+        <div className="dashboard__interval-hint">
+          {currentStepDef?.interval && (
+            <span className="interval-hint">
+              📊 Viewing: {currentStepDef.interval.toUpperCase()}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="dashboard__content">
-        <div className="dashboard__chart-frame">
-          <CandlestickChart
-            pair={state.pair}
-            interval={state.interval}
-            showBOS={state.overlays.bos}
-            showFVG={state.overlays.fvg}
-            showGann={state.overlays.gann}
-            showOB={state.overlays.orderblocks}
-            showLiq={state.overlays.liquidity}
-          />
-        </div>
+        <ChecklistSidebar />
 
-        <div className="dashboard__sidebar">
-          <PredictionCard pair={state.pair} interval={state.interval} />
+        <div className="dashboard__main">
+          <div className="dashboard__chart-frame">
+            <CandlestickChart
+              pair={state.pair}
+              interval={state.interval}
+              showBOS={state.overlays.bos}
+              showFVG={state.overlays.fvg}
+              showGann={state.overlays.gann}
+              showOB={state.overlays.orderblocks}
+              showLiq={state.overlays.liquidity}
+            />
+          </div>
+
+          {showPrediction && (
+            <div className="dashboard__sidebar">
+              <PredictionCard pair={state.pair} interval={state.interval} />
+            </div>
+          )}
         </div>
       </div>
 
