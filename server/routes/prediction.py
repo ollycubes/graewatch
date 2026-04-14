@@ -24,6 +24,8 @@ HTF_MAP = {
 async def get_prediction(
     pair: str = Query(...),
     interval: str = Query("daily"),
+    start: str | None = Query(None, description="Optional start timestamp to filter candles"),
+    end: str | None = Query(None, description="Optional end timestamp to filter candles"),
 ):
     """
     Generate a next-period price prediction by combining all strategy signals.
@@ -40,9 +42,18 @@ async def get_prediction(
 
     candles_collection = db["candles"]
 
-    # ── Fetch candles ────────────────────────────────────────────────────
+    # ── Fetch candles (optionally filtered by time range) ────────────────
+    candle_filter = {"pair": pair, "interval": normalized_interval}
+    if start is not None or end is not None:
+        ts_filter = {}
+        if start is not None:
+            ts_filter["$gte"] = start
+        if end is not None:
+            ts_filter["$lte"] = end
+        candle_filter["timestamp"] = ts_filter
+
     cursor = candles_collection.find(
-        {"pair": pair, "interval": normalized_interval},
+        candle_filter,
         {"_id": 0, "timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
     ).sort("timestamp", 1)
     candles = await cursor.to_list(length=5000)

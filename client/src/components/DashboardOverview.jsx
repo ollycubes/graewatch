@@ -1,6 +1,7 @@
 // Root layout component for the dashboard.
 // Uses the checklist sidebar instead of overlay toggles.
 // The chart and sidebar render based on the current checklist step.
+import { useCallback } from 'react';
 import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import ChecklistSidebar from './ChecklistSidebar';
@@ -15,6 +16,18 @@ function DashboardOverview() {
 
   // Show prediction card only at the final step (15M entry trigger)
   const showPrediction = state.checklist.currentStep >= 4;
+
+  // Handle selection box changes from the chart
+  const handleSelectionChange = useCallback(
+    (sel) => {
+      if (sel) {
+        dispatch({ type: 'SET_SELECTION', payload: sel });
+      } else {
+        dispatch({ type: 'CLEAR_SELECTION' });
+      }
+    },
+    [dispatch],
+  );
 
   return (
     <section className="dashboard__panel">
@@ -67,6 +80,8 @@ function DashboardOverview() {
               showGann={state.overlays.gann}
               showOB={state.overlays.orderblocks}
               showLiq={state.overlays.liquidity}
+              selection={state.selection}
+              onSelectionChange={handleSelectionChange}
             />
           </div>
 
@@ -78,7 +93,7 @@ function DashboardOverview() {
         </div>
       </div>
 
-      <SummaryPanel pair={state.pair} interval={state.interval} />
+      <SummaryPanel pair={state.pair} interval={state.interval} selection={state.selection} />
     </section>
   );
 }

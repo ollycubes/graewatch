@@ -120,6 +120,8 @@ export const initialState = {
     completedSteps: [], // array of completed step ids
     checked: buildInitialChecked(),
   },
+  // Selection box state — null means no selection, otherwise { start, end } timestamps
+  selection: null,
 };
 
 // Derive which overlays should be visible based on all completed & active steps
@@ -245,12 +247,20 @@ export function dashboardReducer(state, action) {
         ...state,
         interval: 'daily',
         overlays: initialState.overlays,
+        selection: null,
         checklist: {
           currentStep: 0,
           completedSteps: [],
           checked: buildInitialChecked(),
         },
       };
+
+    case 'SET_SELECTION':
+      // payload: { start: string, end: string }
+      return { ...state, selection: action.payload };
+
+    case 'CLEAR_SELECTION':
+      return { ...state, selection: null };
 
     default:
       return state;

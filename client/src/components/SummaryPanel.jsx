@@ -19,7 +19,7 @@ function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(4) : String(p);
 }
 
-function SummaryPanel({ pair, interval }) {
+function SummaryPanel({ pair, interval, selection }) {
   const { state } = useDashboard();
   const [summary, setSummary] = useState({ bos: [], fvg: [], gann: [], ob: [], liq: [] });
   const [loading, setLoading] = useState(false);
@@ -37,21 +37,27 @@ function SummaryPanel({ pair, interval }) {
       setLoading(true);
       setError('');
 
+      // Build range query suffix when a selection is active
+      let rangeParams = '';
+      if (selection) {
+        rangeParams = `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
+      }
+
       try {
         const [bosRes, fvgRes, gannRes, obRes, liqRes] = await Promise.all([
-          fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`, {
+          fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}${rangeParams}`, {
             signal: abortController.signal,
           }),
-          fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}`, {
+          fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}${rangeParams}`, {
             signal: abortController.signal,
           }),
-          fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}`, {
+          fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}${rangeParams}`, {
             signal: abortController.signal,
           }),
-          fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}`, {
+          fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}${rangeParams}`, {
             signal: abortController.signal,
           }),
-          fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}`, {
+          fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}${rangeParams}`, {
             signal: abortController.signal,
           }),
         ]);
@@ -84,7 +90,7 @@ function SummaryPanel({ pair, interval }) {
     return () => {
       abortController.abort();
     };
-  }, [pair, interval]);
+  }, [pair, interval, selection]);
 
   const recentBos = [...summary.bos].reverse().slice(0, MAX_SIGNALS);
   const recentFvg = [...summary.fvg].reverse().slice(0, MAX_SIGNALS);

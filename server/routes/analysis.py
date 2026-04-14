@@ -15,6 +15,8 @@ async def get_analysis(
     component: str,
     pair: str = Query(...),
     interval: str = Query("daily"),
+    start: str | None = Query(None, description="Optional start timestamp to filter candles (inclusive)"),
+    end: str | None = Query(None, description="Optional end timestamp to filter candles (inclusive)"),
 ):
     # Normalise the interval
     normalized_interval = normalize_interval(interval)
@@ -31,6 +33,8 @@ async def get_analysis(
             detail=f"Unknown component: {component}. Available: {list(COMPONENTS.keys())}",
         )
 
+    is_ranged = start is not None or end is not None
+
     # Get latest candle fetch marker for cache validation.
     candles_collection = db["candles"]
     latest_candle = await candles_collection.find_one(
@@ -45,23 +49,35 @@ async def get_analysis(
         )
 
     # Reuse cached analysis if computed against current candle snapshot.
+    # Skip cache for ranged queries — they are ad-hoc.
     latest_fetched_at = latest_candle["fetched_at"]
     analysis_collection = db["analysis"]
-    cached = await analysis_collection.find_one(
-        {
-            "component": component,
-            "pair": pair,
-            "interval": normalized_interval,
-            "candles_fetched_at": latest_fetched_at,
-        },
-        {"_id": 0, "component": 1, "pair": 1, "interval": 1, "count": 1, "signals": 1},
-    )
-    if cached:
-        return cached
+    if not is_ranged:
+        cached = await analysis_collection.find_one(
+            {
+                "component": component,
+                "pair": pair,
+                "interval": normalized_interval,
+                "candles_fetched_at": latest_fetched_at,
+            },
+            {"_id": 0, "component": 1, "pair": 1, "interval": 1, "count": 1, "signals": 1},
+        )
+        if cached:
+            return cached
+
+    # Build the candle query filter.
+    candle_filter = {"pair": pair, "interval": normalized_interval}
+    if start is not None or end is not None:
+        ts_filter = {}
+        if start is not None:
+            ts_filter["$gte"] = start
+        if end is not None:
+            ts_filter["$lte"] = end
+        candle_filter["timestamp"] = ts_filter
 
     # Get candles from MongoDB only if analysis cache is stale/missing.
     cursor = candles_collection.find(
-        {"pair": pair, "interval": normalized_interval},
+        candle_filter,
         {"_id": 0, "timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
     ).sort("timestamp", 1)
     candles = await cursor.to_list(length=5000)
@@ -76,7 +92,7 @@ async def get_analysis(
     detect_fn = COMPONENTS[component]
     results = detect_fn(candles)
 
-    # Store results in the analysis collection.
+    # Build the response payload.
     payload = {
         "component": component,
         "pair": pair,
@@ -84,10 +100,13 @@ async def get_analysis(
         "count": len(results),
         "signals": results,
     }
-    await analysis_collection.update_one(
-        {"component": component, "pair": pair, "interval": normalized_interval},
-        {"$set": {**payload, "candles_fetched_at": latest_fetched_at}},
-        upsert=True,
-    )
+
+    # Only cache non-ranged results.
+    if not is_ranged:
+        await analysis_collection.update_one(
+            {"component": component, "pair": pair, "interval": normalized_interval},
+            {"$set": {**payload, "candles_fetched_at": latest_fetched_at}},
+            upsert=True,
+        )
 
     return payload # This is the payload that will be sent to the frontend

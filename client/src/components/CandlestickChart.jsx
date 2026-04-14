@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './FVGBoxesPrimitive';
@@ -6,6 +6,7 @@ import { GannBoxesPrimitive } from './GannBoxesPrimitive';
 import { OBBoxesPrimitive } from './OBBoxesPrimitive';
 import { LiquidityLinesPrimitive } from './LiquidityLinesPrimitive';
 import { PredictionZonePrimitive } from './PredictionZonePrimitive';
+import { SelectionBoxPrimitive } from './SelectionBoxPrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
 
 function toChartTime(value) {
@@ -116,8 +117,9 @@ function filterByBias(signals, bias) {
   return signals.filter((s) => s.direction === bias);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq }) {
+function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, selection, onSelectionChange }) {
   const [error, setError] = useState('');
+  const [isSelecting, setIsSelecting] = useState(false);
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const seriesRef = useRef(null);
@@ -127,6 +129,8 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const obPrimitiveRef = useRef(null);
   const liqPrimitiveRef = useRef(null);
   const predictionPrimitiveRef = useRef(null);
+  const selectionPrimitiveRef = useRef(null);
+  const candleDataRef = useRef([]);
   const bosDataRef = useRef([]);
   const fvgDataRef = useRef([]);
   const gannDataRef = useRef([]);
@@ -139,6 +143,9 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const showGannRef = useRef(showGann);
   const showOBRef = useRef(showOB);
   const showLiqRef = useRef(showLiq);
+  // Selection drag state refs
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef(null);
 
   useEffect(() => {
     showBOSRef.current = showBOS;
@@ -219,6 +226,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     series.attachPrimitive(predictionPrimitive);
     predictionPrimitiveRef.current = predictionPrimitive;
 
+    const selectionPrimitive = new SelectionBoxPrimitive();
+    series.attachPrimitive(selectionPrimitive);
+    selectionPrimitiveRef.current = selectionPrimitive;
+
     // Use ResizeObserver so the chart reflows when the container becomes
     // visible (intro→dashboard) or the sidebar changes the available width.
     const ro = new ResizeObserver((entries) => {
@@ -270,23 +281,30 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             .filter((c) => c.time !== null);
 
           seriesRef.current.setData(formatted);
+          candleDataRef.current = formatted;
           chartRef.current.timeScale().fitContent();
+
+          // Build range params when a selection is active
+          let rangeParams = '';
+          if (selection) {
+            rangeParams = `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
+          }
 
           // Fetch current-TF analysis signals in parallel.
           const fetchPromises = [
-            fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}`, {
+            fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
             }),
-            fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}`, {
+            fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
             }),
-            fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}`, {
+            fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
             }),
-            fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}`, {
+            fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
             }),
-            fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}`, {
+            fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
             }),
           ];
@@ -407,7 +425,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           // Fetch prediction separately (doesn't use the same COMPONENTS pattern)
           try {
             const predRes = await fetch(
-              `/api/prediction?pair=${pair}&interval=${interval}`,
+              `/api/prediction?pair=${pair}&interval=${interval}${rangeParams}`,
               { signal: abortController.signal },
             );
             if (predRes.ok && predictionPrimitiveRef.current) {
@@ -433,7 +451,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     return () => {
       abortController.abort();
     };
-  }, [pair, interval]);
+  }, [pair, interval, selection]);
 
   // Toggle overlays without re-fetching (apply HTF bias filter)
   useEffect(() => {
@@ -476,13 +494,159 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     }
   }, [showLiq]);
 
+  // ── Selection mode mouse handlers ─────────────────────────────────────
+  const handleMouseDown = useCallback((e) => {
+    if (!isSelecting || !chartRef.current || !seriesRef.current) return;
+    const rect = chartContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    isDraggingRef.current = true;
+    dragStartRef.current = { x, y };
+  }, [isSelecting]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
+    const rect = chartContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const start = dragStartRef.current;
+
+    const timeScale = chartRef.current.timeScale();
+    const series = seriesRef.current;
+
+    const t1 = timeScale.coordinateToTime(start.x);
+    const t2 = timeScale.coordinateToTime(x);
+    const p1 = series.coordinateToPrice(start.y);
+    const p2 = series.coordinateToPrice(y);
+
+    if (t1 != null && t2 != null && p1 != null && p2 != null) {
+      selectionPrimitiveRef.current?.setSelection({
+        startTime: Math.min(t1, t2),
+        endTime: Math.max(t1, t2),
+        highPrice: Math.max(p1, p2),
+        lowPrice: Math.min(p1, p2),
+        candleCount: null, // computed on mouseup
+      });
+    }
+  }, []);
+
+  const handleMouseUp = useCallback((e) => {
+    if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
+    isDraggingRef.current = false;
+    const rect = chartContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const start = dragStartRef.current;
+
+    const timeScale = chartRef.current.timeScale();
+    const series = seriesRef.current;
+
+    const t1 = timeScale.coordinateToTime(start.x);
+    const t2 = timeScale.coordinateToTime(x);
+    const p1 = series.coordinateToPrice(start.y);
+    const p2 = series.coordinateToPrice(y);
+
+    if (t1 != null && t2 != null && p1 != null && p2 != null) {
+      const startTime = Math.min(t1, t2);
+      const endTime = Math.max(t1, t2);
+
+      // Count candles within the time range
+      const candlesInRange = candleDataRef.current.filter(
+        (c) => c.time >= startTime && c.time <= endTime,
+      );
+
+      selectionPrimitiveRef.current?.setSelection({
+        startTime,
+        endTime,
+        highPrice: Math.max(p1, p2),
+        lowPrice: Math.min(p1, p2),
+        candleCount: candlesInRange.length,
+      });
+
+      // Convert timestamps to ISO strings for the backend
+      const startDate = new Date(startTime * 1000).toISOString().slice(0, 19).replace('T', ' ');
+      const endDate = new Date(endTime * 1000).toISOString().slice(0, 19).replace('T', ' ');
+
+      if (onSelectionChange) {
+        onSelectionChange({ start: startDate, end: endDate });
+      }
+    }
+
+    setIsSelecting(false);
+  }, [onSelectionChange]);
+
+  // Attach/detach mouse listeners when selection mode changes
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    if (isSelecting) {
+      // Disable chart scrolling/scaling during selection
+      chartRef.current?.applyOptions({
+        handleScroll: false,
+        handleScale: false,
+      });
+      container.addEventListener('mousedown', handleMouseDown);
+      container.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('mouseup', handleMouseUp);
+    } else {
+      // Re-enable chart interaction
+      chartRef.current?.applyOptions({
+        handleScroll: true,
+        handleScale: true,
+      });
+    }
+
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isSelecting, handleMouseDown, handleMouseMove, handleMouseUp]);
+
+  // Sync external selection clear
+  useEffect(() => {
+    if (!selection && selectionPrimitiveRef.current) {
+      selectionPrimitiveRef.current.clear();
+    }
+  }, [selection]);
+
+  const handleClearSelection = useCallback(() => {
+    selectionPrimitiveRef.current?.clear();
+    if (onSelectionChange) {
+      onSelectionChange(null);
+    }
+  }, [onSelectionChange]);
+
   return (
     <div style={{ width: '100%' }}>
       {error && <p className="chart-error">{error}</p>}
       <div
         ref={chartContainerRef}
+        className={isSelecting ? 'chart-container chart-container--selecting' : 'chart-container'}
         style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}
       />
+      <div className="chart-toolbar">
+        <button
+          className={`chart-toolbar__btn ${isSelecting ? 'chart-toolbar__btn--active' : ''}`}
+          onClick={() => setIsSelecting(!isSelecting)}
+          title="Draw selection box"
+        >
+          ⬚ Select
+        </button>
+        {selection && (
+          <>
+            <button
+              className="chart-toolbar__btn chart-toolbar__btn--clear"
+              onClick={handleClearSelection}
+              title="Clear selection"
+            >
+              ✕ Clear
+            </button>
+            <span className="chart-toolbar__label">Selection active</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }
