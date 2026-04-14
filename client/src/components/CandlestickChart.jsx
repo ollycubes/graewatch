@@ -219,14 +219,20 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     series.attachPrimitive(predictionPrimitive);
     predictionPrimitiveRef.current = predictionPrimitive;
 
-    // Handle window resize
-    const handleResize = () => {
-      chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-    };
-    window.addEventListener('resize', handleResize);
+    // Use ResizeObserver so the chart reflows when the container becomes
+    // visible (intro→dashboard) or the sidebar changes the available width.
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width > 0) {
+          chart.applyOptions({ width });
+        }
+      }
+    });
+    ro.observe(chartContainerRef.current);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      ro.disconnect();
       chart.remove();
     };
   }, []);

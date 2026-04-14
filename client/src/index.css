@@ -139,6 +139,7 @@ body {
 }
 
 .dashboard__chart-frame {
+  width: 100%;
   min-width: 0;
   border: 1px solid rgba(150, 126, 118, 0.4);
   border-radius: 14px;
