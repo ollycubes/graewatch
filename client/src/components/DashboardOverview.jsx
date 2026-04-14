@@ -13,8 +13,8 @@ function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();
   const currentStepDef = CHECKLIST_STEPS[state.checklist.currentStep];
 
-  // Show prediction card only at trade management step (step 6)
-  const showPrediction = state.checklist.currentStep >= 6;
+  // Show prediction card only at the final step (15M entry trigger)
+  const showPrediction = state.checklist.currentStep >= 4;
 
   return (
     <section className="dashboard__panel">
