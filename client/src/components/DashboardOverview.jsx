@@ -65,7 +65,12 @@ function DashboardOverview() {
       </div>
 
       <div className="dashboard__prediction-bar">
-        <PredictionCard pair={state.pair} interval={state.interval} selection={state.selection} />
+        <PredictionCard
+          pair={state.pair}
+          interval={state.interval}
+          selection={state.selection}
+          onClearSelection={() => dispatch({ type: 'CLEAR_SELECTION' })}
+        />
       </div>
 
       <div className="dashboard__content">

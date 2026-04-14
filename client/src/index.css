@@ -1018,6 +1018,36 @@ body {
   margin-bottom: 10px;
 }
 
+.prediction-card__selection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 10px;
+  margin-bottom: 10px;
+  border-radius: 20px;
+  background: rgba(38, 166, 154, 0.12);
+  border: 1px solid rgba(38, 166, 154, 0.35);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1b7a70;
+}
+
+.prediction-card__clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1b7a70;
+  font-size: 0.7rem;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.prediction-card__clear-btn:hover {
+  opacity: 1;
+}
+
 .prediction-card__error {
   color: #8f3535;
   font-size: 0.85rem;

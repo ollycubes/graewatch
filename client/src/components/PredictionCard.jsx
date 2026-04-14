@@ -2,6 +2,15 @@
 // target price range, and signal breakdown for the next-period prediction.
 import { useEffect, useState } from 'react';
 
+function formatSelectionDate(ts) {
+  if (ts == null) return '';
+  // ts is a unix timestamp in seconds
+  const ms = typeof ts === 'number' ? ts * 1000 : Date.parse(ts);
+  const d = new Date(ms);
+  if (Number.isNaN(d.getTime())) return String(ts);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
 function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(4) : String(p);
 }
@@ -82,7 +91,7 @@ function ConfidenceGauge({ confidence, direction }) {
   );
 }
 
-function PredictionCard({ pair, interval, selection }) {
+function PredictionCard({ pair, interval, selection, onClearSelection }) {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -155,6 +164,21 @@ function PredictionCard({ pair, interval, selection }) {
     <div className="prediction-card">
       <h2>Prediction</h2>
       <p className="prediction-card__meta">{pair} • {interval}</p>
+
+      {selection && (
+        <div className="prediction-card__selection-badge">
+          <span>
+            {formatSelectionDate(selection.start)} → {formatSelectionDate(selection.end)}
+          </span>
+          <button
+            className="prediction-card__clear-btn"
+            onClick={onClearSelection}
+            title="Clear selection"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="prediction-card__hero">
         <div className="prediction-card__dir-row">
