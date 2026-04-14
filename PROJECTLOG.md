@@ -49,3 +49,62 @@ Please regularly update this file to record your project progress. You should be
 - Created shared interval normalisation helpers (`routes/intervals.py`)
 - Added analysis route (`/api/analysis/{component}`) with modular engine components
 - VSCode linting configuration fixes
+
+
+# Session 7:
+- Added Gann Box detection engine (`engine/gann.py`) pairing swing highs/lows into boxes
+- Built `GannBoxesPrimitive.js` chart overlay — grey shaded rectangle with dashed midline at the 50% premium/discount level
+- Implemented HTF (higher timeframe) bias filtering for top-down analysis: signals on the current timeframe are only shown if they align with the bias one timeframe above
+- HTF bias is computed by combining the most recent BOS direction and Gann box premium/discount position from the higher timeframe
+- HTF mapping: 15min→1H, 1H→4H, 4H→Daily, Daily→Weekly, Weekly→no filter
+- Added `HTF_MAP` constant to `dashboardStore.js`
+
+
+# Session 8:
+- Implemented Order Block (OB) detection engine (`engine/orderblocks.py`)
+  - Bullish OB: last bearish candle before a bullish BOS — zone from candle open to top wick
+  - Bearish OB: last bullish candle before a bearish BOS — zone from candle open to bottom wick
+  - OB zones extend forward until mitigated (price re-enters the zone)
+- Built `OBBoxesPrimitive.js` chart overlay — teal/red shaded rectangles with left-border accent and "OB" label
+- Wired OBs into chart, overlay toggles, summary panel, and HTF bias filtering
+- Added `orderblocks` toggle to dashboard state
+
+
+# Session 9:
+- Built confluence-based prediction engine (`engine/prediction.py`) combining BOS, FVG, Gann, OB, and HTF bias into a directional forecast with confidence score and target price range
+- Added `/api/prediction` route with optional `start`/`end` timestamp filtering
+- Built `PredictionCard.jsx` — displays direction arrow, semicircle confidence gauge, target high/low price range, and signal confluence chips
+- Built `PredictionZonePrimitive.js` — draws a projected price range zone extending to the right of the last candle on the chart
+
+
+# Session 10:
+- Implemented Liquidity Sweep detection engine (`engine/liquidity.py`)
+  - Detects swing high/low sweeps: wick beyond a level, close back inside
+  - Identifies equal highs/lows clusters (liquidity pools) using ATR-based tolerance
+  - Pool sweeps flagged with `pool: true` for stronger signal weighting
+- Built `LiquidityLinesPrimitive.js` — horizontal dashed lines from the source swing to the sweep candle; pool sweeps shown with thicker line and "liq pool" label
+- Added liquidity sweep vote to the prediction engine (10% weight); rebalanced all weights to sum to 1.0
+- Added liquidity overlay toggle and summary panel section
+- Added `recent_liq` signal chip to `PredictionCard`
+
+
+# Session 11:
+- Replaced flat overlay toggle controls with a step-by-step SMC checklist sidebar (`ChecklistSidebar.jsx`)
+- Defined 5 checklist steps in `dashboardStore.js` covering the full top-down analysis workflow: 1W momentum, 1D BOS/OBs, 4H confluence/Gann, 1H POI confirmation, 15M entry trigger
+- Each checklist step automatically sets the chart interval and enables the relevant overlays — overlays accumulate as steps are completed
+- Added selection box tool (`SelectionBoxPrimitive.js`) allowing the user to highlight a specific candle range on the chart
+- Selection range is stored in global state and passed to all analysis and prediction API calls via `start`/`end` query params
+- Scoped prediction results and summary panel signals to the selected range when active
+- Moved prediction card above the chart as a persistent horizontal bar (always visible)
+- Added selection badge to prediction card showing the active date range with a one-click clear button
+- Chart price axis updated to 5 decimal places (`precision: 5`) for forex pairs
+
+
+# Session 12:
+- Project cleanup and organisation
+  - Deleted unused `FAQ.md` (university CMS template)
+  - Deleted unused `OverlayToggles.jsx` (superseded by the checklist sidebar)
+  - Deleted empty `server/routes/__init__.py`
+  - Removed `zones` and `wyckoff` stub engines from the `COMPONENTS` registry (stub files retained for future implementation)
+  - Moved all 7 chart primitive files into `client/src/components/primitives/` subfolder
+  - Created `.env.example` documenting required environment variables
