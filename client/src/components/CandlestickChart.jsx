@@ -5,6 +5,7 @@ import { FVGBoxesPrimitive } from './primitives/FVGBoxesPrimitive';
 import { GannBoxesPrimitive } from './primitives/GannBoxesPrimitive';
 import { OBBoxesPrimitive } from './primitives/OBBoxesPrimitive';
 import { LiquidityLinesPrimitive } from './primitives/LiquidityLinesPrimitive';
+import { WyckoffPrimitive } from './primitives/WyckoffPrimitive';
 import { SetupPrimitive } from './primitives/SetupPrimitive';
 import { SelectionBoxPrimitive } from './primitives/SelectionBoxPrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
@@ -90,6 +91,17 @@ function normalizeLiqSignals(signals) {
     .filter((s) => s.source_timestamp !== null && s.timestamp !== null);
 }
 
+function normalizeWyckoffSignals(signals) {
+  return signals
+    .map((s) => ({
+      ...s,
+      timestamp: toChartTime(s.timestamp),
+      range_start: toChartTime(s.range_start),
+      range_end: toChartTime(s.range_end),
+    }))
+    .filter((s) => s.timestamp !== null && s.range_start !== null);
+}
+
 function computeHTFBias(htfBosSignals, htfGannSignals, htfLatestClose) {
   // BOS bias: direction of the most recent signal
   let bosBias = null;
@@ -117,7 +129,7 @@ function filterByBias(signals, bias) {
   return signals.filter((s) => s.direction === bias);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, selection, onSelectionChange }) {
+function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange }) {
   const [error, setError] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
   const chartContainerRef = useRef(null);
@@ -128,6 +140,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const gannPrimitiveRef = useRef(null);
   const obPrimitiveRef = useRef(null);
   const liqPrimitiveRef = useRef(null);
+  const wyckoffPrimitiveRef = useRef(null);
   const setupPrimitiveRef = useRef(null);
   const selectionPrimitiveRef = useRef(null);
   const candleDataRef = useRef([]);
@@ -136,6 +149,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const gannDataRef = useRef([]);
   const obDataRef = useRef([]);
   const liqDataRef = useRef([]);
+  const wyckoffDataRef = useRef([]);
   const htfBiasRef = useRef(null);
   const requestVersionRef = useRef(0);
   const showBOSRef = useRef(showBOS);
@@ -143,6 +157,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const showGannRef = useRef(showGann);
   const showOBRef = useRef(showOB);
   const showLiqRef = useRef(showLiq);
+  const showWyckoffRef = useRef(showWyckoff);
   // Selection drag state refs
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef(null);
@@ -166,6 +181,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   useEffect(() => {
     showLiqRef.current = showLiq;
   }, [showLiq]);
+
+  useEffect(() => {
+    showWyckoffRef.current = showWyckoff;
+  }, [showWyckoff]);
 
   // Create the chart once on mount
   useEffect(() => {
@@ -222,6 +241,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     const liqPrimitive = new LiquidityLinesPrimitive();
     series.attachPrimitive(liqPrimitive);
     liqPrimitiveRef.current = liqPrimitive;
+
+    const wyckoffPrimitive = new WyckoffPrimitive();
+    series.attachPrimitive(wyckoffPrimitive);
+    wyckoffPrimitiveRef.current = wyckoffPrimitive;
 
     const setupPrimitive = new SetupPrimitive();
     series.attachPrimitive(setupPrimitive);
@@ -315,6 +338,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           }
 
           // Fetch current-TF analysis signals in parallel.
+          // Indices: 0=bos, 1=fvg, 2=gann, 3=ob, 4=liq, 5=wyckoff, 6+=HTF
           const fetchPromises = [
             fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
@@ -329,6 +353,9 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
               signal: abortController.signal,
             }),
             fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}${rangeParams}`, {
+              signal: abortController.signal,
+            }),
+            fetch(`/api/analysis/wyckoff?pair=${pair}&interval=${interval}${rangeParams}`, {
               signal: abortController.signal,
             }),
           ];
@@ -392,10 +419,18 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             liqDataRef.current = [];
           }
 
+          const wyckoffResult = results[5];
+          if (wyckoffResult && wyckoffResult.status === 'fulfilled' && wyckoffResult.value.ok) {
+            const wyckoffData = await wyckoffResult.value.json();
+            wyckoffDataRef.current = normalizeWyckoffSignals(wyckoffData.signals || []);
+          } else {
+            wyckoffDataRef.current = [];
+          }
+
           // Compute HTF bias if a higher timeframe was fetched.
           htfBiasRef.current = null;
           if (htfInterval) {
-            const [htfBosResult, htfGannResult, htfCandlesResult] = results.slice(5);
+            const [htfBosResult, htfGannResult, htfCandlesResult] = results.slice(6);
             let htfBosSignals = [];
             let htfGannSignals = [];
             let htfLatestClose = null;
@@ -443,6 +478,11 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           if (liqPrimitiveRef.current) {
             liqPrimitiveRef.current.setLines(
               showLiqRef.current ? filterByBias(liqDataRef.current, bias) : [],
+            );
+          }
+          if (wyckoffPrimitiveRef.current) {
+            wyckoffPrimitiveRef.current.setSignals(
+              showWyckoffRef.current ? filterByBias(wyckoffDataRef.current, bias) : [],
             );
           }
 
@@ -522,6 +562,14 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
       );
     }
   }, [showLiq]);
+
+  useEffect(() => {
+    if (wyckoffPrimitiveRef.current) {
+      wyckoffPrimitiveRef.current.setSignals(
+        showWyckoff ? filterByBias(wyckoffDataRef.current, htfBiasRef.current) : [],
+      );
+    }
+  }, [showWyckoff]);
 
   // ── Selection mode mouse handlers ─────────────────────────────────────
   // When the user drags beyond visible candle data, coordinateToTime()

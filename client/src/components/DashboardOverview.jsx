@@ -86,6 +86,7 @@ function DashboardOverview() {
               showGann={state.overlays.gann}
               showOB={state.overlays.orderblocks}
               showLiq={state.overlays.liquidity}
+              showWyckoff={state.overlays.wyckoff}
               selection={state.selection}
               onSelectionChange={handleSelectionChange}
             />

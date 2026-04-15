@@ -69,6 +69,7 @@ async def get_setup(
     fvg_signals = COMPONENTS["fvg"](candles)
     ob_signals = COMPONENTS["orderblocks"](candles)
     liq_signals = COMPONENTS["liquidity"](candles)
+    wyckoff_signals = COMPONENTS["wyckoff"](candles)
 
     # ── HTF data for bias computation ────────────────────────────────────────
     htf_bos_signals = None
@@ -94,6 +95,7 @@ async def get_setup(
         fvg_signals=fvg_signals,
         ob_signals=ob_signals,
         liq_signals=liq_signals,
+        wyckoff_signals=wyckoff_signals,
         htf_bos_signals=htf_bos_signals,
         htf_gann_signals=htf_gann_signals,
         htf_candles=htf_candles,

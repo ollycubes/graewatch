@@ -84,7 +84,7 @@ export const CHECKLIST_STEPS = [
     title: '15M · 15-Minute',
     subtitle: 'Entry trigger',
     interval: '15min',
-    overlays: { bos: true, fvg: true, gann: false, orderblocks: true, liquidity: true },
+    overlays: { bos: true, fvg: true, gann: false, orderblocks: true, liquidity: true, wyckoff: true },
     items: [
       { key: 'm15_wyckoff', label: 'Look for Wyckoff structures forming inside the zone — not essential, but a strong bonus when present', required: false },
       { key: 'm15_sweep', label: 'Look for a liquidity sweep of local 15-minute highs or lows inside the zone', required: true },
@@ -113,6 +113,7 @@ export const initialState = {
     gann: false,
     orderblocks: false,
     liquidity: false,
+    wyckoff: false,
   },
   // Checklist state
   checklist: {
@@ -126,7 +127,7 @@ export const initialState = {
 
 // Derive which overlays should be visible based on all completed & active steps
 function deriveOverlays(currentStep, completedSteps) {
-  const merged = { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false };
+  const merged = { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false, wyckoff: false };
   // Enable overlays from all completed steps AND the current active step
   const relevantSteps = [...completedSteps, currentStep];
   for (const stepId of relevantSteps) {
