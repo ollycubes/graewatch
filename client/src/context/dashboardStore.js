@@ -178,16 +178,10 @@ export function dashboardReducer(state, action) {
     case 'TOGGLE_CHECKLIST_ITEM': {
       const key = action.payload;
       const newChecked = { ...state.checklist.checked, [key]: !state.checklist.checked[key] };
-      const currentStep = state.checklist.currentStep;
-
-      // Derive new overlays and interval
-      const newOverlays = deriveOverlays(currentStep, state.checklist.completedSteps);
-      const newInterval = deriveInterval(currentStep, state.interval);
-
+      // Only update checked state — interval and overlays are derived from step
+      // navigation (ADVANCE_STEP / GO_TO_STEP), not from ticking individual items.
       return {
         ...state,
-        interval: newInterval,
-        overlays: newOverlays,
         checklist: {
           ...state.checklist,
           checked: newChecked,
@@ -205,7 +199,10 @@ export function dashboardReducer(state, action) {
         ? state.checklist.completedSteps
         : [...state.checklist.completedSteps, current];
 
-      const newOverlays = deriveOverlays(nextStep, newCompleted);
+      // Only derive overlays when a selection is active; otherwise keep them off.
+      const newOverlays = state.selection
+        ? deriveOverlays(nextStep, newCompleted)
+        : initialState.overlays;
       const newInterval = deriveInterval(nextStep, state.interval);
 
       return {
@@ -228,7 +225,10 @@ export function dashboardReducer(state, action) {
         targetStep === state.checklist.currentStep;
       if (!isAllowed) return state;
 
-      const newOverlays = deriveOverlays(targetStep, state.checklist.completedSteps);
+      // Only derive overlays when a selection is active; otherwise keep them off.
+      const newOverlays = state.selection
+        ? deriveOverlays(targetStep, state.checklist.completedSteps)
+        : initialState.overlays;
       const newInterval = deriveInterval(targetStep, state.interval);
 
       return {
@@ -255,12 +255,19 @@ export function dashboardReducer(state, action) {
         },
       };
 
-    case 'SET_SELECTION':
+    case 'SET_SELECTION': {
       // payload: { start: string, end: string }
-      return { ...state, selection: action.payload };
+      // When a selection is made, derive overlays for the current step so indicators show.
+      const selOverlays = deriveOverlays(
+        state.checklist.currentStep,
+        state.checklist.completedSteps,
+      );
+      return { ...state, selection: action.payload, overlays: selOverlays };
+    }
 
     case 'CLEAR_SELECTION':
-      return { ...state, selection: null };
+      // When the selection is cleared, turn off all overlays.
+      return { ...state, selection: null, overlays: initialState.overlays };
 
     default:
       return state;

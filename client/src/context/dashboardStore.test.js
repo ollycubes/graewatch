@@ -126,9 +126,21 @@ describe('TOGGLE_CHECKLIST_ITEM', () => {
   });
 
   it('does not advance the step automatically', () => {
-    // Checking items should not auto-advance — only ADVANCE_STEP does that
     const state = stateWithStepChecked(0);
     expect(state.checklist.currentStep).toBe(0);
+  });
+
+  it('does not change the interval when checking an item', () => {
+    // Ticking a box should never trigger a chart refetch by changing interval
+    const key = CHECKLIST_STEPS[0].items[0].key;
+    const state = dashboardReducer(initialState, { type: 'TOGGLE_CHECKLIST_ITEM', payload: key });
+    expect(state.interval).toBe(initialState.interval);
+  });
+
+  it('does not change the overlays when checking an item', () => {
+    const key = CHECKLIST_STEPS[0].items[0].key;
+    const state = dashboardReducer(initialState, { type: 'TOGGLE_CHECKLIST_ITEM', payload: key });
+    expect(state.overlays).toBe(initialState.overlays); // same reference — no copy made
   });
 });
 
