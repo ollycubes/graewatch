@@ -9,10 +9,9 @@
  */
 
 const COLORS = {
-  bullishFill: 'rgba(38, 166, 154, 0.28)',
-  bullishBorder: 'rgba(38, 166, 154, 0.8)',
-  bearishFill: 'rgba(239, 83, 80, 0.28)',
-  bearishBorder: 'rgba(239, 83, 80, 0.8)',
+  fill: 'rgba(245, 222, 179, 0.45)',
+  border: 'rgba(200, 170, 120, 0.70)',
+  label: 'rgba(160, 130, 80, 0.85)',
 };
 
 class OBBoxesRenderer {
@@ -24,23 +23,20 @@ class OBBoxesRenderer {
     target.useMediaCoordinateSpace(({ context: ctx }) => {
       for (const box of this._boxes) {
         // Filled rectangle
-        ctx.fillStyle = box.fillColor;
+        ctx.fillStyle = COLORS.fill;
         ctx.fillRect(box.x, box.y, box.width, box.height);
 
-        // Solid left border line to mark the OB origin
-        ctx.strokeStyle = box.borderColor;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(box.x, box.y);
-        ctx.lineTo(box.x, box.y + box.height);
-        ctx.stroke();
+        // Thin border outline
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-        // "OB" label near the left border
-        ctx.fillStyle = box.borderColor;
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText('OB', box.x + 4, box.y + 3);
+        // "OB" label centred inside the box
+        ctx.fillStyle = COLORS.label;
+        ctx.font = 'bold 11px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('OB', box.x + box.width / 2, box.y + box.height / 2);
       }
     });
   }
@@ -85,15 +81,11 @@ class OBBoxesPaneView {
         x2 = x1 + 200;
       }
 
-      const isBullish = ob.direction === 'bullish';
-
       boxes.push({
         x: x1,
         y: yTop,
         width: x2 - x1,
         height: yBottom - yTop,
-        fillColor: isBullish ? COLORS.bullishFill : COLORS.bearishFill,
-        borderColor: isBullish ? COLORS.bullishBorder : COLORS.bearishBorder,
       });
     }
 
