@@ -423,20 +423,25 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             );
           }
 
-          // Fetch prediction separately (doesn't use the same COMPONENTS pattern)
-          try {
-            const predRes = await fetch(
-              `/api/prediction?pair=${pair}&interval=${interval}${rangeParams}`,
-              { signal: abortController.signal },
-            );
-            if (predRes.ok && predictionPrimitiveRef.current) {
-              const predData = await predRes.json();
-              predictionPrimitiveRef.current.setPrediction(predData);
+          // Fetch prediction only when a selection is active
+          if (selection && rangeParams) {
+            try {
+              const predRes = await fetch(
+                `/api/prediction?pair=${pair}&interval=${interval}${rangeParams}`,
+                { signal: abortController.signal },
+              );
+              if (predRes.ok && predictionPrimitiveRef.current) {
+                const predData = await predRes.json();
+                predictionPrimitiveRef.current.setPrediction(predData);
+              }
+            } catch (predErr) {
+              if (predErr?.name !== 'AbortError') {
+                // Prediction is non-critical — silently ignore errors
+              }
             }
-          } catch (predErr) {
-            if (predErr?.name !== 'AbortError') {
-              // Prediction is non-critical — silently ignore errors
-            }
+          } else if (predictionPrimitiveRef.current) {
+            // No selection — clear any stale prediction zone
+            predictionPrimitiveRef.current.setPrediction(null);
           }
         }
       } catch (error) {

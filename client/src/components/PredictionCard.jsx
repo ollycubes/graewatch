@@ -97,6 +97,15 @@ function PredictionCard({ pair, interval, selection, onClearSelection }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Only fetch a prediction when a selection is active.
+    // Without a selection, clear any stale prediction and bail out.
+    if (!selection) {
+      setPrediction(null);
+      setError('');
+      setLoading(false);
+      return;
+    }
+
     const abortController = new AbortController();
 
     async function fetchPrediction() {
@@ -104,9 +113,7 @@ function PredictionCard({ pair, interval, selection, onClearSelection }) {
       setError('');
       try {
         let url = `/api/prediction?pair=${pair}&interval=${interval}`;
-        if (selection) {
-          url += `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
-        }
+        url += `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
         const res = await fetch(url, { signal: abortController.signal });
         if (!res.ok) throw new Error(`Prediction failed: ${res.status}`);
         const data = await res.json();
