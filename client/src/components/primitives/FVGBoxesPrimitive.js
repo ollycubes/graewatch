@@ -11,8 +11,21 @@ class FVGBoxesRenderer {
   draw(target) {
     target.useMediaCoordinateSpace(({ context: ctx }) => {
       for (const box of this._boxes) {
-        ctx.fillStyle = box.color;
+        // Fill
+        ctx.fillStyle = 'rgba(188, 210, 240, 0.40)';
         ctx.fillRect(box.x, box.y, box.width, box.height);
+
+        // Thin border
+        ctx.strokeStyle = 'rgba(140, 175, 220, 0.65)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+        // "FVG" label centred inside the box
+        ctx.fillStyle = 'rgba(80, 110, 160, 0.80)';
+        ctx.font = 'bold 11px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('FVG', box.x + box.width / 2, box.y + box.height / 2);
       }
     });
   }
@@ -60,13 +73,7 @@ class FVGBoxesPaneView {
       const width = x2 - x1;
       const height = yBottom - yTop;
 
-      boxes.push({
-        x: x1,
-        y: yTop,
-        width,
-        height,
-        color: fvg.direction === 'bullish' ? 'rgba(38, 166, 154, 0.2)' : 'rgba(239, 83, 80, 0.2)',
-      });
+      boxes.push({ x: x1, y: yTop, width, height });
     }
 
     return new FVGBoxesRenderer(boxes);

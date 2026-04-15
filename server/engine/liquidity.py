@@ -96,6 +96,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
                     "direction": "bearish",
                     "price": ah["price"],
                     "pool": ah.get("pool", False),
+                    "swept": True,
                 })
                 swept_high_indices.append(ah_i)
 
@@ -109,6 +110,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
                     "direction": "bullish",
                     "price": al["price"],
                     "pool": al.get("pool", False),
+                    "swept": True,
                 })
                 swept_low_indices.append(al_i)
 
@@ -117,6 +119,28 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
             active_highs.pop(idx)
         for idx in reversed(swept_low_indices):
             active_lows.pop(idx)
+
+    # ── Step 5: Emit remaining unswept levels ─────────────────────────────
+    # Limit to the 6 most recent to avoid chart clutter.
+    last_ts = candles[-1]["timestamp"]
+    for ah in active_highs[-6:]:
+        events.append({
+            "source_timestamp": ah["timestamp"],
+            "timestamp": last_ts,
+            "direction": "bearish",
+            "price": ah["price"],
+            "pool": ah.get("pool", False),
+            "swept": False,
+        })
+    for al in active_lows[-6:]:
+        events.append({
+            "source_timestamp": al["timestamp"],
+            "timestamp": last_ts,
+            "direction": "bullish",
+            "price": al["price"],
+            "pool": al.get("pool", False),
+            "swept": False,
+        })
 
     return events
 
