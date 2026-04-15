@@ -79,8 +79,21 @@ class SelectionBoxPaneView {
     const timeScale = src._chart.timeScale();
     const series = src._series;
 
-    const x1 = timeScale.timeToCoordinate(startTime);
-    const x2 = timeScale.timeToCoordinate(endTime);
+    // When switching timeframes the loaded data range changes. If the selection
+    // timestamps fall outside the new chart data, timeToCoordinate returns null
+    // and the box disappears. Instead, clamp the selection to the visible range
+    // so the box stays visible across timeframe changes.
+    const visibleRange = timeScale.getVisibleRange();
+    if (!visibleRange) return null;
+
+    // If the selection is entirely outside the loaded data, nothing to draw.
+    if (endTime < visibleRange.from || startTime > visibleRange.to) return null;
+
+    const clampedStart = Math.max(startTime, visibleRange.from);
+    const clampedEnd = Math.min(endTime, visibleRange.to);
+
+    const x1 = timeScale.timeToCoordinate(clampedStart);
+    const x2 = timeScale.timeToCoordinate(clampedEnd);
     const yTop = series.priceToCoordinate(highPrice);
     const yBottom = series.priceToCoordinate(lowPrice);
 

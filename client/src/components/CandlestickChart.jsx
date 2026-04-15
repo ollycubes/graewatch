@@ -5,7 +5,7 @@ import { FVGBoxesPrimitive } from './primitives/FVGBoxesPrimitive';
 import { GannBoxesPrimitive } from './primitives/GannBoxesPrimitive';
 import { OBBoxesPrimitive } from './primitives/OBBoxesPrimitive';
 import { LiquidityLinesPrimitive } from './primitives/LiquidityLinesPrimitive';
-import { PredictionZonePrimitive } from './primitives/PredictionZonePrimitive';
+import { SetupPrimitive } from './primitives/SetupPrimitive';
 import { SelectionBoxPrimitive } from './primitives/SelectionBoxPrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
 
@@ -128,7 +128,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const gannPrimitiveRef = useRef(null);
   const obPrimitiveRef = useRef(null);
   const liqPrimitiveRef = useRef(null);
-  const predictionPrimitiveRef = useRef(null);
+  const setupPrimitiveRef = useRef(null);
   const selectionPrimitiveRef = useRef(null);
   const candleDataRef = useRef([]);
   const bosDataRef = useRef([]);
@@ -223,9 +223,9 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     series.attachPrimitive(liqPrimitive);
     liqPrimitiveRef.current = liqPrimitive;
 
-    const predictionPrimitive = new PredictionZonePrimitive();
-    series.attachPrimitive(predictionPrimitive);
-    predictionPrimitiveRef.current = predictionPrimitive;
+    const setupPrimitive = new SetupPrimitive();
+    series.attachPrimitive(setupPrimitive);
+    setupPrimitiveRef.current = setupPrimitive;
 
     const selectionPrimitive = new SelectionBoxPrimitive();
     series.attachPrimitive(selectionPrimitive);
@@ -283,7 +283,30 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
 
           seriesRef.current.setData(formatted);
           candleDataRef.current = formatted;
-          chartRef.current.timeScale().fitContent();
+
+          // When a selection is active, lock the chart view to the selected
+          // time period so top-down analysis stays focused on the same window
+          // across all timeframes (weekly → daily → 4h → 1h → 15min).
+          // A small 10% gutter on each side keeps the selection box from
+          // touching the chart edges. Without a selection, show all data.
+          if (selection && selection.start && selection.end) {
+            const startTs = toChartTime(selection.start);
+            const endTs = toChartTime(selection.end);
+            if (startTs !== null && endTs !== null && formatted.length > 0) {
+              const span = Math.max(endTs - startTs, 3600);
+              const gutter = span * 0.1;
+              const firstTs = formatted[0].time;
+              const lastTs = formatted[formatted.length - 1].time;
+              chartRef.current.timeScale().setVisibleRange({
+                from: Math.max(startTs - gutter, firstTs),
+                to: Math.min(endTs + gutter, lastTs),
+              });
+            } else {
+              chartRef.current.timeScale().fitContent();
+            }
+          } else {
+            chartRef.current.timeScale().fitContent();
+          }
 
           // Build range params when a selection is active
           let rangeParams = '';
@@ -423,25 +446,25 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             );
           }
 
-          // Fetch prediction only when a selection is active
+          // Fetch setup only when a selection is active
           if (selection && rangeParams) {
             try {
-              const predRes = await fetch(
-                `/api/prediction?pair=${pair}&interval=${interval}${rangeParams}`,
+              const setupRes = await fetch(
+                `/api/setup?pair=${pair}&interval=${interval}${rangeParams}`,
                 { signal: abortController.signal },
               );
-              if (predRes.ok && predictionPrimitiveRef.current) {
-                const predData = await predRes.json();
-                predictionPrimitiveRef.current.setPrediction(predData);
+              if (setupRes.ok && setupPrimitiveRef.current) {
+                const setupData = await setupRes.json();
+                setupPrimitiveRef.current.setSetup(setupData);
               }
-            } catch (predErr) {
-              if (predErr?.name !== 'AbortError') {
-                // Prediction is non-critical — silently ignore errors
+            } catch (setupErr) {
+              if (setupErr?.name !== 'AbortError') {
+                // Setup is non-critical — silently ignore errors
               }
             }
-          } else if (predictionPrimitiveRef.current) {
-            // No selection — clear any stale prediction zone
-            predictionPrimitiveRef.current.setPrediction(null);
+          } else if (setupPrimitiveRef.current) {
+            // No selection — clear any stale setup overlay
+            setupPrimitiveRef.current.clear();
           }
         }
       } catch (error) {

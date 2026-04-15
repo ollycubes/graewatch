@@ -6,7 +6,7 @@ import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import ChecklistSidebar from './ChecklistSidebar';
 import SummaryPanel from './SummaryPanel';
-import PredictionCard from './PredictionCard';
+import SetupCard from './SetupCard';
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
 
@@ -65,7 +65,7 @@ function DashboardOverview() {
       </div>
 
       <div className="dashboard__prediction-bar">
-        <PredictionCard
+        <SetupCard
           pair={state.pair}
           interval={state.interval}
           selection={state.selection}

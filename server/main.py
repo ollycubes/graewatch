@@ -10,8 +10,8 @@ from routes import candles as candles_module
 from routes.analysis import router as analysis_router
 from routes import analysis as analysis_module
 
-from routes.prediction import router as prediction_router
-from routes import prediction as prediction_module
+from routes.setup import router as setup_router
+from routes import setup as setup_module
 
 load_dotenv(dotenv_path="../.env")
 
@@ -34,8 +34,8 @@ candles_module.db = db
 analysis_module.db = db
 app.include_router(analysis_router)
 
-prediction_module.db = db
-app.include_router(prediction_router)
+setup_module.db = db
+app.include_router(setup_router)
 
 # Register the route
 app.include_router(candles_router)

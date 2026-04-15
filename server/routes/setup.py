@@ -3,14 +3,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
-from engine.prediction import predict
+from engine.setup import detect as detect_setup
 from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
 
 router = APIRouter()
 
 db: AsyncIOMotorDatabase | None = None
 
-# Maps each current-TF interval to its higher timeframe for bias computation.
 HTF_MAP = {
     "15min": "1h",
     "1h": "4h",
@@ -20,15 +19,16 @@ HTF_MAP = {
 }
 
 
-@router.get("/api/prediction")
-async def get_prediction(
+@router.get("/api/setup")
+async def get_setup(
     pair: str = Query(...),
     interval: str = Query("daily"),
     start: str | None = Query(None, description="Optional start timestamp to filter candles"),
     end: str | None = Query(None, description="Optional end timestamp to filter candles"),
 ):
     """
-    Generate a next-period price prediction by combining all strategy signals.
+    Identify an SMC trade setup (entry POI, target, stop, R:R) from current
+    and higher-timeframe signals within the optionally specified time range.
     """
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
@@ -42,10 +42,10 @@ async def get_prediction(
 
     candles_collection = db["candles"]
 
-    # ── Fetch candles (optionally filtered by time range) ────────────────
-    candle_filter = {"pair": pair, "interval": normalized_interval}
+    # ── Fetch candles (optionally scoped to selection range) ─────────────────
+    candle_filter: dict = {"pair": pair, "interval": normalized_interval}
     if start is not None or end is not None:
-        ts_filter = {}
+        ts_filter: dict = {}
         if start is not None:
             ts_filter["$gte"] = start
         if end is not None:
@@ -61,17 +61,16 @@ async def get_prediction(
     if not candles:
         raise HTTPException(
             status_code=404,
-            detail=f"No candle data found for {pair} {normalized_interval}. Fetch candles first.",
+            detail=f"No candle data for {pair} {normalized_interval}. Fetch candles first.",
         )
 
-    # ── Run all strategy detectors on current TF ─────────────────────────
+    # ── Run detectors on current TF ──────────────────────────────────────────
     bos_signals = COMPONENTS["bos"](candles)
     fvg_signals = COMPONENTS["fvg"](candles)
-    gann_signals = COMPONENTS["gann"](candles)
     ob_signals = COMPONENTS["orderblocks"](candles)
     liq_signals = COMPONENTS["liquidity"](candles)
 
-    # ── HTF data for bias ────────────────────────────────────────────────
+    # ── HTF data for bias computation ────────────────────────────────────────
     htf_bos_signals = None
     htf_gann_signals = None
     htf_candles = None
@@ -88,12 +87,11 @@ async def get_prediction(
             htf_bos_signals = COMPONENTS["bos"](htf_candles)
             htf_gann_signals = COMPONENTS["gann"](htf_candles)
 
-    # ── Run prediction engine ────────────────────────────────────────────
-    result = predict(
+    # ── Detect setup ─────────────────────────────────────────────────────────
+    result = detect_setup(
         candles=candles,
         bos_signals=bos_signals,
         fvg_signals=fvg_signals,
-        gann_signals=gann_signals,
         ob_signals=ob_signals,
         liq_signals=liq_signals,
         htf_bos_signals=htf_bos_signals,
@@ -101,8 +99,4 @@ async def get_prediction(
         htf_candles=htf_candles,
     )
 
-    return {
-        "pair": pair,
-        "interval": normalized_interval,
-        **result,
-    }
+    return {"pair": pair, "interval": normalized_interval, **result}
