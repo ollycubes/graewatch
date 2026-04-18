@@ -1227,3 +1227,53 @@ body {
   color: var(--step-done);
   font-weight: 600;
 }
+
+.zone-conviction__tfs {
+  display: flex;
+  gap: 3px;
+}
+
+.zone-conviction__tf-badge {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(63, 51, 47, 0.1);
+  color: var(--text-muted);
+}
+
+/* ── Bias Chain (SetupCard + SummaryPanel) ── */
+
+.bias-chain {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.bias-chain--panel {
+  margin-bottom: 6px;
+}
+
+.bias-chain__item {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.70rem;
+  font-weight: 700;
+}
+
+.bias-chain__item--bullish {
+  background: rgba(58, 158, 126, 0.15);
+  color: var(--step-done);
+}
+
+.bias-chain__item--bearish {
+  background: rgba(143, 53, 53, 0.12);
+  color: #8f3535;
+}
+
+.bias-chain__item--neutral {
+  background: rgba(150, 126, 118, 0.12);
+  color: var(--text-muted);
+}

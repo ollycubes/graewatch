@@ -20,35 +20,63 @@ function formatPrice(p) {
 }
 
 const SOURCE_LABEL = { ob: 'OB', fvg: 'FVG', wyckoff: 'WY' };
+const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
+const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
 
-function ZoneConviction({ zones }) {
-  if (!zones || zones.length === 0) return null;
+function BiasChainBar({ chain }) {
+  if (!chain) return null;
+  const order = ['weekly', 'daily', '4h', '1h', '15min'];
+  const entries = order.filter((tf) => chain[tf]);
+  return (
+    <div className="bias-chain bias-chain--panel">
+      {entries.map((tf) => (
+        <span key={tf} className={`bias-chain__item bias-chain__item--${chain[tf]}`}>
+          {TF_SHORT[tf]} {BIAS_ARROW[chain[tf]] ?? chain[tf]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ZoneConviction({ zones, biasChain }) {
+  if ((!zones || zones.length === 0) && !biasChain) return null;
   return (
     <section className="summary-panel__section zone-conviction">
-      <h3>Zone Conviction ({zones.length})</h3>
-      <ul className="summary-panel__list">
-        {zones.map((z, i) => {
-          const bd = z.score_breakdown || {};
-          const bonuses = [
-            bd.at_poi > 0 && 'POI',
-            bd.liquidity > 0 && 'Liq',
-            z.cluster_size > 1 && `×${z.cluster_size}`,
-          ].filter(Boolean);
-          return (
-            <li key={i} className="zone-conviction__item">
-              <span className="zone-conviction__rank">#{i + 1}</span>
-              <span className="zone-conviction__badge">{SOURCE_LABEL[z.source_type] ?? z.source_type}</span>
-              <span className="zone-conviction__range">
-                {z.bottom?.toFixed(4)}–{z.top?.toFixed(4)}
-              </span>
-              <span className="zone-conviction__score">{z.score}</span>
-              {bonuses.length > 0 && (
-                <span className="zone-conviction__flags">{bonuses.join(' · ')}</span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <h3>Zone Conviction {zones?.length > 0 && `(${zones.length})`}</h3>
+      <BiasChainBar chain={biasChain} />
+      {(!zones || zones.length === 0) ? (
+        <p className="summary-panel__count">No confluence zones found</p>
+      ) : (
+        <ul className="summary-panel__list">
+          {zones.map((z, i) => {
+            const bd = z.score_breakdown || {};
+            const tfMatches = z.tf_matches || [];
+            const flags = [
+              bd.at_poi > 0 && 'POI',
+              bd.liquidity > 0 && 'Liq',
+              z.cluster_size > 1 && `×${z.cluster_size}`,
+            ].filter(Boolean);
+            return (
+              <li key={i} className="zone-conviction__item">
+                <span className="zone-conviction__rank">#{i + 1}</span>
+                <span className="zone-conviction__badge">{SOURCE_LABEL[z.source_type] ?? z.source_type}</span>
+                <span className="zone-conviction__range">
+                  {z.bottom?.toFixed(4)}–{z.top?.toFixed(4)}
+                </span>
+                <span className="zone-conviction__score">{z.score}</span>
+                <span className="zone-conviction__tfs">
+                  {tfMatches.map((tf) => (
+                    <span key={tf} className="zone-conviction__tf-badge">{TF_SHORT[tf] ?? tf}</span>
+                  ))}
+                </span>
+                {flags.length > 0 && (
+                  <span className="zone-conviction__flags">{flags.join(' · ')}</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
@@ -57,6 +85,7 @@ function SummaryPanel({ pair, interval, selection }) {
   const { state } = useDashboard();
   const [summary, setSummary] = useState({ bos: [], fvg: [], gann: [], ob: [], liq: [] });
   const [zones, setZones] = useState([]);
+  const [biasChain, setBiasChain] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -87,7 +116,7 @@ function SummaryPanel({ pair, interval, selection }) {
           fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
         ];
         if (selection) {
-          fetchList.push(fetch(`/api/zones?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }));
+          fetchList.push(fetch(`/api/confluence?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }));
         }
 
         const results = await Promise.allSettled(fetchList);
@@ -119,8 +148,10 @@ function SummaryPanel({ pair, interval, selection }) {
         if (zonesResult?.status === 'fulfilled' && zonesResult.value.ok) {
           const zonesData = await zonesResult.value.json();
           setZones(zonesData.zones || []);
+          setBiasChain(zonesData.bias_chain ?? null);
         } else {
           setZones([]);
+          setBiasChain(null);
         }
       } catch (err) {
         if (err?.name !== 'AbortError') {
@@ -129,7 +160,7 @@ function SummaryPanel({ pair, interval, selection }) {
       } finally {
         if (!abortController.signal.aborted) {
           setLoading(false);
-          if (!selection) setZones([]);
+          if (!selection) { setZones([]); setBiasChain(null); }
         }
       }
     }
@@ -164,7 +195,7 @@ function SummaryPanel({ pair, interval, selection }) {
 
       {!loading && !error && (
         <>
-          {selection && <ZoneConviction zones={zones} />}
+          {selection && <ZoneConviction zones={zones} biasChain={biasChain} />}
           {overlays.bos && (
             <section className="summary-panel__section">
               <h3>BOS ({summary.bos.length})</h3>

@@ -16,6 +16,9 @@ from routes import setup as setup_module
 from routes.zones import router as zones_router
 from routes import zones as zones_module
 
+from routes.confluence import router as confluence_router
+from routes import confluence as confluence_module
+
 load_dotenv(dotenv_path="../.env")
 
 app = FastAPI()
@@ -42,6 +45,9 @@ app.include_router(setup_router)
 
 zones_module.db = db
 app.include_router(zones_router)
+
+confluence_module.db = db
+app.include_router(confluence_router)
 
 app.include_router(candles_router)
 

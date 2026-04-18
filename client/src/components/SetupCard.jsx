@@ -46,8 +46,11 @@ function ScoreBar({ zone }) {
     { key: 'Prox', val: bd.proximity },
     { key: 'POI', val: bd.at_poi },
     { key: 'Liq', val: bd.liquidity },
+    { key: 'TF', val: bd.tf_confluence },
     { key: 'Conf', val: bd.cluster },
   ].filter((i) => i.val > 0);
+
+  const tfMatches = zone.tf_matches || [];
 
   return (
     <div className="zone-score-bar">
@@ -60,6 +63,29 @@ function ScoreBar({ zone }) {
       {zone.cluster_size > 1 && (
         <span className="zone-score-bar__confluence">×{zone.cluster_size}</span>
       )}
+      {tfMatches.map((tf) => (
+        <span key={tf} className="zone-score-bar__tf">
+          {TF_SHORT[tf] ?? tf}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
+const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
+
+function BiasChain({ chain }) {
+  if (!chain || Object.keys(chain).length === 0) return null;
+  const order = ['weekly', 'daily', '4h', '1h', '15min'];
+  const entries = order.filter((tf) => chain[tf]);
+  return (
+    <div className="bias-chain">
+      {entries.map((tf) => (
+        <span key={tf} className={`bias-chain__item bias-chain__item--${chain[tf]}`}>
+          {TF_SHORT[tf]} {BIAS_ARROW[chain[tf]] ?? chain[tf]}
+        </span>
+      ))}
     </div>
   );
 }
@@ -67,6 +93,7 @@ function ScoreBar({ zone }) {
 function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
   const [setup, setSetup] = useState(null);
   const [topZone, setTopZone] = useState(null);
+  const [biasChain, setBiasChain] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -74,6 +101,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
     if (!selection) {
       setSetup(null);
       setTopZone(null);
+      setBiasChain(null);
       setError('');
       setLoading(false);
       if (onSetup) onSetup(null);
@@ -91,7 +119,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
       try {
         const [setupRes, zonesRes] = await Promise.allSettled([
           fetch(`/api/setup?${base}`, { signal: ctrl.signal }),
-          fetch(`/api/zones?${base}`, { signal: ctrl.signal }),
+          fetch(`/api/confluence?${base}`, { signal: ctrl.signal }),
         ]);
 
         if (setupRes.status === 'fulfilled' && setupRes.value.ok) {
@@ -105,6 +133,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
         if (zonesRes.status === 'fulfilled' && zonesRes.value.ok) {
           const data = await zonesRes.value.json();
           setTopZone((data.zones || [])[0] ?? null);
+          setBiasChain(data.bias_chain ?? null);
         }
       } catch (err) {
         if (err?.name !== 'AbortError') setError('Setup unavailable');
@@ -137,6 +166,8 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
         {loading && <span className="setup-card__hint">Analysing…</span>}
         {error && <span className="setup-card__error">{error}</span>}
       </div>
+
+      {biasChain && <BiasChain chain={biasChain} />}
 
       {/* Centre: setup levels */}
       {setup && setup.valid && (

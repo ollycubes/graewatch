@@ -326,8 +326,6 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           // When a selection is active, lock the chart view to the selected
           // time period so top-down analysis stays focused on the same window
           // across all timeframes (weekly → daily → 4h → 1h → 15min).
-          // A small 10% gutter on each side keeps the selection box from
-          // touching the chart edges. Without a selection, show all data.
           if (selection && selection.start && selection.end) {
             const startTs = toChartTime(selection.start);
             const endTs = toChartTime(selection.end);
@@ -336,12 +334,31 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
               const gutter = span * 0.1;
               const firstTs = formatted[0].time;
               const lastTs = formatted[formatted.length - 1].time;
-              chartRef.current.timeScale().setVisibleRange({
-                from: Math.max(startTs - gutter, firstTs),
-                to: Math.min(endTs + gutter, lastTs),
-              });
+              const from = Math.max(startTs - gutter, firstTs);
+              const to = Math.min(endTs + gutter, lastTs);
+              // Guard: only call setVisibleRange when the selection overlaps
+              // the loaded candle data.  If from >= to the selection predates
+              // the available data and we fall back to showing all candles.
+              if (from < to) {
+                chartRef.current.timeScale().setVisibleRange({ from, to });
+              } else {
+                chartRef.current.timeScale().fitContent();
+              }
             } else {
               chartRef.current.timeScale().fitContent();
+            }
+
+            // Update the selection box's candle count for the new interval
+            // so the badge stays accurate as you step through timeframes.
+            if (selectionPrimitiveRef.current?._selection) {
+              const { startTime, endTime } = selectionPrimitiveRef.current._selection;
+              const candlesInRange = formatted.filter(
+                (c) => c.time >= startTime && c.time <= endTime,
+              );
+              selectionPrimitiveRef.current.setSelection({
+                ...selectionPrimitiveRef.current._selection,
+                candleCount: candlesInRange.length,
+              });
             }
           } else {
             chartRef.current.timeScale().fitContent();
@@ -507,15 +524,15 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             try {
               const [setupRes, zonesRes] = await Promise.allSettled([
                 fetch(`/api/setup?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
-                fetch(`/api/zones?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+                fetch(`/api/confluence?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
               ]);
               if (setupRes.status === 'fulfilled' && setupRes.value.ok && setupPrimitiveRef.current) {
                 const setupData = await setupRes.value.json();
                 setupPrimitiveRef.current.setSetup(setupData);
               }
               if (zonesRes.status === 'fulfilled' && zonesRes.value.ok && zonesPrimitiveRef.current) {
-                const zonesData = await zonesRes.value.json();
-                const top3 = normalizeZoneSignals((zonesData.zones || []).slice(0, 3));
+                const confluenceData = await zonesRes.value.json();
+                const top3 = normalizeZoneSignals((confluenceData.zones || []).slice(0, 3));
                 zonesPrimitiveRef.current.setZones(top3);
               }
             } catch (err) {
