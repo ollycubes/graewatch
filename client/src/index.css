@@ -416,6 +416,39 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── No-selection prompt ── */
+
+.checklist-sidebar__no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(150, 126, 118, 0.08);
+  border: 1px dashed rgba(150, 126, 118, 0.30);
+  text-align: center;
+}
+
+.checklist-sidebar__no-selection-icon {
+  font-size: 1.4rem;
+  opacity: 0.5;
+}
+
+.checklist-sidebar__no-selection p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.checklist-sidebar__steps--locked {
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Advance Button ── */
 
 .checklist-sidebar__advance {

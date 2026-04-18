@@ -19,8 +19,9 @@ function ChecklistSidebar() {
   const { state, dispatch, isStepComplete: checkComplete } = useDashboard();
   const { currentStep, completedSteps, checked } = state.checklist;
 
+  const hasSelection = !!state.selection;
   const canAdvance =
-    currentStep < CHECKLIST_STEPS.length - 1 && checkComplete(currentStep);
+    hasSelection && currentStep < CHECKLIST_STEPS.length - 1 && checkComplete(currentStep);
 
   return (
     <aside className="checklist-sidebar" aria-label="SMC Checklist">
@@ -36,11 +37,18 @@ function ChecklistSidebar() {
         </button>
       </div>
 
-      <div className="checklist-sidebar__steps">
+      {/* Prompt shown when no selection exists */}
+      {!hasSelection && (
+        <div className="checklist-sidebar__no-selection">
+          <span className="checklist-sidebar__no-selection-icon">⬚</span>
+          <p>Draw a selection on the chart to begin your analysis</p>
+        </div>
+      )}
+
+      <div className={`checklist-sidebar__steps${!hasSelection ? ' checklist-sidebar__steps--locked' : ''}`}>
         {CHECKLIST_STEPS.map((step) => {
           const isCompleted = completedSteps.includes(step.id);
           const isActive = step.id === currentStep;
-          const isLocked = !isCompleted && !isActive;
           const status = isCompleted ? 'completed' : isActive ? 'active' : 'locked';
 
           return (
@@ -48,7 +56,7 @@ function ChecklistSidebar() {
               key={step.id}
               className={`checklist-step checklist-step--${status}`}
               onClick={() => {
-                if (isCompleted || isActive) {
+                if (hasSelection && (isCompleted || isActive)) {
                   dispatch({ type: 'GO_TO_STEP', payload: step.id });
                 }
               }}
@@ -62,8 +70,8 @@ function ChecklistSidebar() {
                 </div>
               </div>
 
-              {/* Expand sub-items when active */}
-              {isActive && (
+              {/* Expand sub-items only when active AND a selection exists */}
+              {isActive && hasSelection && (
                 <div className="checklist-step__items">
                   {step.items.map((item) => (
                     <label
