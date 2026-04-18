@@ -244,6 +244,9 @@ export function dashboardReducer(state, action) {
     }
 
     case 'RESET_CHECKLIST':
+    case 'CLEAR_SELECTION':
+      // Resetting or clearing the selection completely wipes the checklist progress
+      // because the selection is the anchor for the entire top-down analysis.
       return {
         ...state,
         interval: 'daily',
@@ -265,10 +268,6 @@ export function dashboardReducer(state, action) {
       );
       return { ...state, selection: action.payload, overlays: selOverlays };
     }
-
-    case 'CLEAR_SELECTION':
-      // When the selection is cleared, turn off all overlays.
-      return { ...state, selection: null, overlays: initialState.overlays };
 
     default:
       return state;
