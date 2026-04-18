@@ -19,9 +19,44 @@ function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(4) : String(p);
 }
 
+const SOURCE_LABEL = { ob: 'OB', fvg: 'FVG', wyckoff: 'WY' };
+
+function ZoneConviction({ zones }) {
+  if (!zones || zones.length === 0) return null;
+  return (
+    <section className="summary-panel__section zone-conviction">
+      <h3>Zone Conviction ({zones.length})</h3>
+      <ul className="summary-panel__list">
+        {zones.map((z, i) => {
+          const bd = z.score_breakdown || {};
+          const bonuses = [
+            bd.at_poi > 0 && 'POI',
+            bd.liquidity > 0 && 'Liq',
+            z.cluster_size > 1 && `×${z.cluster_size}`,
+          ].filter(Boolean);
+          return (
+            <li key={i} className="zone-conviction__item">
+              <span className="zone-conviction__rank">#{i + 1}</span>
+              <span className="zone-conviction__badge">{SOURCE_LABEL[z.source_type] ?? z.source_type}</span>
+              <span className="zone-conviction__range">
+                {z.bottom?.toFixed(4)}–{z.top?.toFixed(4)}
+              </span>
+              <span className="zone-conviction__score">{z.score}</span>
+              {bonuses.length > 0 && (
+                <span className="zone-conviction__flags">{bonuses.join(' · ')}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function SummaryPanel({ pair, interval, selection }) {
   const { state } = useDashboard();
   const [summary, setSummary] = useState({ bos: [], fvg: [], gann: [], ob: [], liq: [] });
+  const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,29 +79,34 @@ function SummaryPanel({ pair, interval, selection }) {
       }
 
       try {
-        const [bosRes, fvgRes, gannRes, obRes, liqRes] = await Promise.all([
-          fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}${rangeParams}`, {
-            signal: abortController.signal,
-          }),
-          fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}${rangeParams}`, {
-            signal: abortController.signal,
-          }),
-          fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}${rangeParams}`, {
-            signal: abortController.signal,
-          }),
-          fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}${rangeParams}`, {
-            signal: abortController.signal,
-          }),
-          fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}${rangeParams}`, {
-            signal: abortController.signal,
-          }),
-        ]);
+        const fetchList = [
+          fetch(`/api/analysis/bos?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+          fetch(`/api/analysis/fvg?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+          fetch(`/api/analysis/gann?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+          fetch(`/api/analysis/orderblocks?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+          fetch(`/api/analysis/liquidity?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+        ];
+        if (selection) {
+          fetchList.push(fetch(`/api/zones?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }));
+        }
 
-        if (!bosRes.ok || !fvgRes.ok || !gannRes.ok || !obRes.ok || !liqRes.ok) {
+        const results = await Promise.allSettled(fetchList);
+        const [bosRes, fvgRes, gannRes, obRes, liqRes] = results;
+
+        if (
+          bosRes.status !== 'fulfilled' || !bosRes.value.ok ||
+          fvgRes.status !== 'fulfilled' || !fvgRes.value.ok ||
+          gannRes.status !== 'fulfilled' || !gannRes.value.ok ||
+          obRes.status !== 'fulfilled' || !obRes.value.ok ||
+          liqRes.status !== 'fulfilled' || !liqRes.value.ok
+        ) {
           throw new Error('Unable to load summary signals');
         }
 
-        const [bos, fvg, gann, ob, liq] = await Promise.all([bosRes.json(), fvgRes.json(), gannRes.json(), obRes.json(), liqRes.json()]);
+        const [bos, fvg, gann, ob, liq] = await Promise.all([
+          bosRes.value.json(), fvgRes.value.json(), gannRes.value.json(),
+          obRes.value.json(), liqRes.value.json(),
+        ]);
         setSummary({
           bos: bos.signals || [],
           fvg: fvg.signals || [],
@@ -74,6 +114,14 @@ function SummaryPanel({ pair, interval, selection }) {
           ob: ob.signals || [],
           liq: liq.signals || [],
         });
+
+        const zonesResult = results[5];
+        if (zonesResult?.status === 'fulfilled' && zonesResult.value.ok) {
+          const zonesData = await zonesResult.value.json();
+          setZones(zonesData.zones || []);
+        } else {
+          setZones([]);
+        }
       } catch (err) {
         if (err?.name !== 'AbortError') {
           setError('Signal summary unavailable right now.');
@@ -81,6 +129,7 @@ function SummaryPanel({ pair, interval, selection }) {
       } finally {
         if (!abortController.signal.aborted) {
           setLoading(false);
+          if (!selection) setZones([]);
         }
       }
     }
@@ -115,6 +164,7 @@ function SummaryPanel({ pair, interval, selection }) {
 
       {!loading && !error && (
         <>
+          {selection && <ZoneConviction zones={zones} />}
           {overlays.bos && (
             <section className="summary-panel__section">
               <h3>BOS ({summary.bos.length})</h3>

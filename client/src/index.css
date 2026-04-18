@@ -1143,3 +1143,87 @@ body {
 .setup-card__clear:hover {
   opacity: 1;
 }
+
+/* ── Zone Score Bar (SetupCard entry row) ── */
+
+.zone-score-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 6px;
+  margin: 2px 0 4px;
+  background: rgba(212, 160, 50, 0.1);
+  border-left: 2px solid rgba(180, 120, 20, 0.5);
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+.zone-score-bar__total {
+  font-weight: 700;
+  color: rgba(140, 90, 10, 0.9);
+  margin-right: 2px;
+}
+
+.zone-score-bar__item {
+  padding: 1px 5px;
+  background: rgba(212, 160, 50, 0.15);
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+
+.zone-score-bar__confluence {
+  padding: 1px 5px;
+  background: rgba(58, 158, 126, 0.15);
+  border-radius: 3px;
+  color: var(--step-done);
+  font-weight: 600;
+}
+
+/* ── Zone Conviction (SummaryPanel) ── */
+
+.zone-conviction__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(150, 126, 118, 0.15);
+  font-size: 0.82rem;
+}
+
+.zone-conviction__item:last-child {
+  border-bottom: none;
+}
+
+.zone-conviction__rank {
+  font-weight: 700;
+  color: rgba(180, 120, 20, 0.85);
+  min-width: 18px;
+}
+
+.zone-conviction__badge {
+  padding: 1px 5px;
+  background: rgba(212, 160, 50, 0.18);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(140, 90, 10, 0.9);
+}
+
+.zone-conviction__range {
+  flex: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.zone-conviction__score {
+  font-weight: 700;
+  color: rgba(140, 90, 10, 0.85);
+  font-variant-numeric: tabular-nums;
+}
+
+.zone-conviction__flags {
+  font-size: 0.68rem;
+  color: var(--step-done);
+  font-weight: 600;
+}

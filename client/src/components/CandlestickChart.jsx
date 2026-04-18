@@ -7,6 +7,7 @@ import { OBBoxesPrimitive } from './primitives/OBBoxesPrimitive';
 import { LiquidityLinesPrimitive } from './primitives/LiquidityLinesPrimitive';
 import { WyckoffPrimitive } from './primitives/WyckoffPrimitive';
 import { SetupPrimitive } from './primitives/SetupPrimitive';
+import { ZonesPrimitive } from './primitives/ZonesPrimitive';
 import { SelectionBoxPrimitive } from './primitives/SelectionBoxPrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
 
@@ -91,6 +92,16 @@ function normalizeLiqSignals(signals) {
     .filter((s) => s.source_timestamp !== null && s.timestamp !== null);
 }
 
+function normalizeZoneSignals(zones) {
+  return zones
+    .map((z) => ({
+      ...z,
+      timestamp: toChartTime(z.timestamp),
+      end_timestamp: z.end_timestamp ? toChartTime(z.end_timestamp) : null,
+    }))
+    .filter((z) => z.timestamp !== null);
+}
+
 function normalizeWyckoffSignals(signals) {
   return signals
     .map((s) => ({
@@ -142,6 +153,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const liqPrimitiveRef = useRef(null);
   const wyckoffPrimitiveRef = useRef(null);
   const setupPrimitiveRef = useRef(null);
+  const zonesPrimitiveRef = useRef(null);
   const selectionPrimitiveRef = useRef(null);
   const candleDataRef = useRef([]);
   const bosDataRef = useRef([]);
@@ -249,6 +261,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     const setupPrimitive = new SetupPrimitive();
     series.attachPrimitive(setupPrimitive);
     setupPrimitiveRef.current = setupPrimitive;
+
+    const zonesPrimitive = new ZonesPrimitive();
+    series.attachPrimitive(zonesPrimitive);
+    zonesPrimitiveRef.current = zonesPrimitive;
 
     const selectionPrimitive = new SelectionBoxPrimitive();
     series.attachPrimitive(selectionPrimitive);
@@ -486,25 +502,30 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             );
           }
 
-          // Fetch setup only when a selection is active
+          // Fetch setup + zones only when a selection is active
           if (selection && rangeParams) {
             try {
-              const setupRes = await fetch(
-                `/api/setup?pair=${pair}&interval=${interval}${rangeParams}`,
-                { signal: abortController.signal },
-              );
-              if (setupRes.ok && setupPrimitiveRef.current) {
-                const setupData = await setupRes.json();
+              const [setupRes, zonesRes] = await Promise.allSettled([
+                fetch(`/api/setup?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+                fetch(`/api/zones?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+              ]);
+              if (setupRes.status === 'fulfilled' && setupRes.value.ok && setupPrimitiveRef.current) {
+                const setupData = await setupRes.value.json();
                 setupPrimitiveRef.current.setSetup(setupData);
               }
-            } catch (setupErr) {
-              if (setupErr?.name !== 'AbortError') {
-                // Setup is non-critical — silently ignore errors
+              if (zonesRes.status === 'fulfilled' && zonesRes.value.ok && zonesPrimitiveRef.current) {
+                const zonesData = await zonesRes.value.json();
+                const top3 = normalizeZoneSignals((zonesData.zones || []).slice(0, 3));
+                zonesPrimitiveRef.current.setZones(top3);
+              }
+            } catch (err) {
+              if (err?.name !== 'AbortError') {
+                // Setup/zones are non-critical — silently ignore errors
               }
             }
-          } else if (setupPrimitiveRef.current) {
-            // No selection — clear any stale setup overlay
-            setupPrimitiveRef.current.clear();
+          } else {
+            setupPrimitiveRef.current?.clear();
+            zonesPrimitiveRef.current?.clear();
           }
         }
       } catch (error) {

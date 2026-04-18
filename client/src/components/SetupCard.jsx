@@ -1,12 +1,3 @@
-/**
- * SMC trade setup card.
- *
- * Replaces the old weighted-confidence PredictionCard with a concrete
- * structural setup: Entry POI · Target · Stop · R:R ratio.
- *
- * Only fetches when a selection is active — without a selection there
- * is no scoped context to evaluate a setup against.
- */
 import { useEffect, useState } from 'react';
 
 function formatPrice(p) {
@@ -21,7 +12,7 @@ function formatDate(ts) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 }
 
-const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing' };
+const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing', wyckoff: 'WY' };
 
 function BiasBadge({ bias }) {
   const cls =
@@ -47,14 +38,42 @@ function SetupRow({ label, value, tag, highlight }) {
   );
 }
 
+function ScoreBar({ zone }) {
+  if (!zone) return null;
+  const bd = zone.score_breakdown || {};
+  const items = [
+    { key: 'Type', val: bd.type },
+    { key: 'Prox', val: bd.proximity },
+    { key: 'POI', val: bd.at_poi },
+    { key: 'Liq', val: bd.liquidity },
+    { key: 'Conf', val: bd.cluster },
+  ].filter((i) => i.val > 0);
+
+  return (
+    <div className="zone-score-bar">
+      <span className="zone-score-bar__total">{zone.score}</span>
+      {items.map((i) => (
+        <span key={i.key} className="zone-score-bar__item">
+          {i.key} +{i.val}
+        </span>
+      ))}
+      {zone.cluster_size > 1 && (
+        <span className="zone-score-bar__confluence">×{zone.cluster_size}</span>
+      )}
+    </div>
+  );
+}
+
 function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
   const [setup, setSetup] = useState(null);
+  const [topZone, setTopZone] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!selection) {
       setSetup(null);
+      setTopZone(null);
       setError('');
       setLoading(false);
       if (onSetup) onSetup(null);
@@ -63,18 +82,30 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
 
     const ctrl = new AbortController();
 
-    async function fetchSetup() {
+    async function fetchAll() {
       setLoading(true);
       setError('');
+      const range = `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
+      const base = `pair=${pair}&interval=${interval}${range}`;
+
       try {
-        const url =
-          `/api/setup?pair=${pair}&interval=${interval}` +
-          `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
-        const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) throw new Error(`Setup fetch failed: ${res.status}`);
-        const data = await res.json();
-        setSetup(data);
-        if (onSetup) onSetup(data);
+        const [setupRes, zonesRes] = await Promise.allSettled([
+          fetch(`/api/setup?${base}`, { signal: ctrl.signal }),
+          fetch(`/api/zones?${base}`, { signal: ctrl.signal }),
+        ]);
+
+        if (setupRes.status === 'fulfilled' && setupRes.value.ok) {
+          const data = await setupRes.value.json();
+          setSetup(data);
+          if (onSetup) onSetup(data);
+        } else {
+          throw new Error('Setup fetch failed');
+        }
+
+        if (zonesRes.status === 'fulfilled' && zonesRes.value.ok) {
+          const data = await zonesRes.value.json();
+          setTopZone((data.zones || [])[0] ?? null);
+        }
       } catch (err) {
         if (err?.name !== 'AbortError') setError('Setup unavailable');
       } finally {
@@ -82,11 +113,18 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
       }
     }
 
-    fetchSetup();
+    fetchAll();
     return () => ctrl.abort();
   }, [pair, interval, selection, onSetup]);
 
-  // ── Shell (always rendered so the bar never collapses) ──────────────────
+  // Entry display: prefer #1 scored zone, fall back to setup's entry
+  const entryTop = topZone ? topZone.top : setup?.entry_top;
+  const entryBottom = topZone ? topZone.bottom : setup?.entry_bottom;
+  const entryType = topZone ? topZone.source_type : setup?.entry_type;
+  const atPoi = topZone
+    ? topZone.score_breakdown?.at_poi > 0
+    : setup?.at_poi;
+
   return (
     <div className="setup-card">
       {/* Left: meta + bias */}
@@ -105,10 +143,11 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
         <div className="setup-card__levels">
           <SetupRow
             label="Entry"
-            value={`${formatPrice(setup.entry_bottom)} – ${formatPrice(setup.entry_top)}`}
-            tag={TYPE_LABELS[setup.entry_type]}
-            highlight={setup.at_poi}
+            value={`${formatPrice(entryBottom)} – ${formatPrice(entryTop)}`}
+            tag={TYPE_LABELS[entryType]}
+            highlight={atPoi}
           />
+          <ScoreBar zone={topZone} />
           <SetupRow
             label="Target"
             value={formatPrice(setup.target)}
