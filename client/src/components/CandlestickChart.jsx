@@ -140,6 +140,26 @@ function filterByBias(signals, bias) {
   return signals.filter((s) => s.direction === bias);
 }
 
+// Convert normalized daily BOS signals into Gann boxes anchored to each BOS:
+//   start  = the swing that was broken  (swing_timestamp / swing_ref)
+//   end    = null → extends to the visible chart right edge
+//   height = range between the broken swing and the BOS close
+// This matches the checklist instruction: "Anchor the Gannbox from the swing
+// that caused the most recent daily BOS to the swing that was broken."
+function deriveGannFromBos(normalizedBosSignals, bias) {
+  return normalizedBosSignals
+    .filter((s) => !bias || s.direction === bias)
+    .map((s) => ({
+      start_timestamp: s.swing_timestamp,   // already chart-time number
+      end_timestamp:   null,                // extend to visible right edge
+      high_price:      Math.max(s.price, s.swing_ref),
+      low_price:       Math.min(s.price, s.swing_ref),
+      direction:       s.direction,
+      label:           'D',                // "Daily BOS" source marker
+    }))
+    .filter((s) => s.start_timestamp != null);
+}
+
 function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange }) {
   const [error, setError] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
@@ -163,6 +183,8 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const liqDataRef = useRef([]);
   const wyckoffDataRef = useRef([]);
   const htfBiasRef = useRef(null);
+  const htfBosDataRef = useRef([]);   // daily BOS signals (pre-normalized) for 4H Gann derivation
+  const intervalRef = useRef(interval); // kept in sync so Gann toggle can read current interval
   const requestVersionRef = useRef(0);
   const showBOSRef = useRef(showBOS);
   const showFVGRef = useRef(showFVG);
@@ -185,6 +207,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   useEffect(() => {
     showGannRef.current = showGann;
   }, [showGann]);
+
+  useEffect(() => {
+    intervalRef.current = interval;
+  }, [interval]);
 
   useEffect(() => {
     showOBRef.current = showOB;
@@ -485,6 +511,11 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             }
 
             htfBiasRef.current = computeHTFBias(htfBosSignals, htfGannSignals, htfLatestClose);
+            // Store normalized HTF BOS so the Gann toggle effect can derive
+            // boxes without re-fetching when on 4H.
+            htfBosDataRef.current = normalizeBosSignals(htfBosSignals);
+          } else {
+            htfBosDataRef.current = [];
           }
 
           const bias = htfBiasRef.current;
@@ -499,9 +530,12 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             );
           }
           if (gannPrimitiveRef.current) {
-            gannPrimitiveRef.current.setBoxes(
-              showGannRef.current ? filterByBias(gannDataRef.current, bias) : [],
-            );
+            // On 4H: show Gann boxes derived from Daily BOS (confluence-anchored).
+            // On all other intervals: show the native Gann boxes for that TF.
+            const gannBoxes = (interval === '4h' && htfBosDataRef.current.length > 0)
+              ? deriveGannFromBos(htfBosDataRef.current, bias)
+              : filterByBias(gannDataRef.current, bias);
+            gannPrimitiveRef.current.setBoxes(showGannRef.current ? gannBoxes : []);
           }
           if (obPrimitiveRef.current) {
             obPrimitiveRef.current.setZones(
@@ -579,9 +613,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
 
   useEffect(() => {
     if (gannPrimitiveRef.current) {
-      gannPrimitiveRef.current.setBoxes(
-        showGann ? filterByBias(gannDataRef.current, htfBiasRef.current) : [],
-      );
+      const gannBoxes = (intervalRef.current === '4h' && htfBosDataRef.current.length > 0)
+        ? deriveGannFromBos(htfBosDataRef.current, htfBiasRef.current)
+        : filterByBias(gannDataRef.current, htfBiasRef.current);
+      gannPrimitiveRef.current.setBoxes(showGann ? gannBoxes : []);
     }
   }, [showGann]);
 
@@ -752,6 +787,16 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     if (!selection && selectionPrimitiveRef.current) {
       selectionPrimitiveRef.current.clear();
     }
+  }, [selection]);
+
+  // Sync selection end time to primitives so zones don't extend past the selection
+  useEffect(() => {
+    const endChartTime = selection?.end ? toChartTime(selection.end) : null;
+    if (fvgPrimitiveRef.current) fvgPrimitiveRef.current.setEndTime(endChartTime);
+    if (obPrimitiveRef.current) obPrimitiveRef.current.setEndTime(endChartTime);
+    if (zonesPrimitiveRef.current) zonesPrimitiveRef.current.setEndTime(endChartTime);
+    if (liqPrimitiveRef.current) liqPrimitiveRef.current.setEndTime(endChartTime);
+    if (gannPrimitiveRef.current) gannPrimitiveRef.current.setEndTime(endChartTime);
   }, [selection]);
 
   const handleClearSelection = useCallback(() => {

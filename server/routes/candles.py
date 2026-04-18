@@ -51,8 +51,9 @@ async def get_candles(
             cursor = collection.find(
                 {"pair": pair, "interval": normalized_interval},
                 {"_id": 0, "pair": 0, "interval": 0, "fetched_at": 0},
-            ).sort("timestamp", 1)
+            ).sort("timestamp", -1)
             candles = await cursor.to_list(length=5000)
+            candles.reverse()
 
             # If the data is fresh we return cached candle data
             return {
@@ -70,7 +71,7 @@ async def get_candles(
     params = { 
         "symbol": pair,
         "interval": td_interval,
-        "outputsize": 500,
+        "outputsize": 5000,
         "apikey": api_key,
     }
 
@@ -117,8 +118,9 @@ async def get_candles(
     cursor = collection.find(
         {"pair": pair, "interval": normalized_interval},
         {"_id": 0, "pair": 0, "interval": 0, "fetched_at": 0},
-    ).sort("timestamp", 1)
+    ).sort("timestamp", -1)
     candles = await cursor.to_list(length=5000)
+    candles.reverse()
 
     return {
         "source": "api",

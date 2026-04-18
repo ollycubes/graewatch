@@ -194,7 +194,11 @@ describe('ADVANCE_STEP', () => {
   });
 
   it('accumulates overlays from completed and new step', () => {
-    const ready = stateWithStepChecked(0);
+    const withSel = dashboardReducer(initialState, {
+      type: 'SET_SELECTION',
+      payload: { start: 100, end: 200 },
+    });
+    const ready = stateWithStepChecked(0, withSel);
     const state = dashboardReducer(ready, { type: 'ADVANCE_STEP' });
     // Step 0 enables fvg and orderblocks; step 1 also enables bos, orderblocks, liquidity
     // After advancing, merged overlays from steps 0 and 1 should both be reflected

@@ -62,10 +62,12 @@ class FVGBoxesPaneView {
       let x2 = null;
       if (fvg.end_timestamp) {
         x2 = timeScale.timeToCoordinate(fvg.end_timestamp);
-      }
-      if (x2 === null || x2 === undefined) {
+      } else if (src._endTime) {
+        x2 = timeScale.timeToCoordinate(src._endTime);
+      } else {
         x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
       }
+
       if (x2 === null || x2 === undefined) {
         x2 = x1 + 200;
       }
@@ -83,6 +85,7 @@ class FVGBoxesPaneView {
 export class FVGBoxesPrimitive {
   constructor() {
     this._fvgZones = [];
+    this._endTime = null;
     this._chart = null;
     this._series = null;
     this._requestUpdate = null;
@@ -105,6 +108,13 @@ export class FVGBoxesPrimitive {
 
   paneViews() {
     return [this._paneView];
+  }
+
+  setEndTime(time) {
+    this._endTime = time;
+    if (this._requestUpdate) {
+      this._requestUpdate();
+    }
   }
 
   setZones(signals) {

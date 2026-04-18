@@ -22,6 +22,9 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
         - price:            the swept swing price level
         - pool:             True if the level was part of an equal highs/lows cluster
     """
+    if not candles:
+        return []
+
     N = 3  # lookback for swing detection (consistent with BOS / Gann / OB)
 
     swing_highs = []

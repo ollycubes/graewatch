@@ -97,6 +97,9 @@ class LiquidityLinesPaneView {
         // End at the sweep candle
         x2 = timeScale.timeToCoordinate(liq.timestamp);
         if (x2 === null) continue;
+      } else if (src._endTime) {
+        x2 = timeScale.timeToCoordinate(src._endTime);
+        if (x2 === null) x2 = x1 + 400;
       } else {
         // Extend to the visible right edge (or a safe fallback)
         x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
@@ -120,6 +123,7 @@ class LiquidityLinesPaneView {
 export class LiquidityLinesPrimitive {
   constructor() {
     this._liqLines = [];
+    this._endTime = null;
     this._chart = null;
     this._series = null;
     this._requestUpdate = null;
@@ -142,6 +146,13 @@ export class LiquidityLinesPrimitive {
 
   paneViews() {
     return [this._paneView];
+  }
+
+  setEndTime(time) {
+    this._endTime = time;
+    if (this._requestUpdate) {
+      this._requestUpdate();
+    }
   }
 
   setLines(signals) {

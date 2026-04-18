@@ -73,10 +73,12 @@ class OBBoxesPaneView {
       let x2 = null;
       if (ob.end_timestamp) {
         x2 = timeScale.timeToCoordinate(ob.end_timestamp);
-      }
-      if (x2 === null || x2 === undefined) {
+      } else if (src._endTime) {
+        x2 = timeScale.timeToCoordinate(src._endTime);
+      } else {
         x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
       }
+
       if (x2 === null || x2 === undefined) {
         x2 = x1 + 200;
       }
@@ -96,6 +98,7 @@ class OBBoxesPaneView {
 export class OBBoxesPrimitive {
   constructor() {
     this._obZones = [];
+    this._endTime = null;
     this._chart = null;
     this._series = null;
     this._requestUpdate = null;
@@ -118,6 +121,13 @@ export class OBBoxesPrimitive {
 
   paneViews() {
     return [this._paneView];
+  }
+
+  setEndTime(time) {
+    this._endTime = time;
+    if (this._requestUpdate) {
+      this._requestUpdate();
+    }
   }
 
   setZones(signals) {

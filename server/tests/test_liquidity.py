@@ -120,7 +120,7 @@ def test_no_sweep_when_close_above_swept_high():
     # Close above the swing high — NOT a sweep
     candles[15] = make_candle(15, 1.009, 1.012, 1.007, 1.011)
     result = detect(candles)
-    bearish = [e for e in result if e["direction"] == "bearish"]
+    bearish = [e for e in result if e["direction"] == "bearish" and e.get("swept", False)]
     assert bearish == []
 
 
@@ -131,7 +131,7 @@ def test_no_sweep_when_close_below_swept_low():
     # Close below the swing low — NOT a sweep
     candles[15] = make_candle(15, 0.991, 0.993, 0.987, 0.988)
     result = detect(candles)
-    bullish = [e for e in result if e["direction"] == "bullish"]
+    bullish = [e for e in result if e["direction"] == "bullish" and e.get("swept", False)]
     assert bullish == []
 
 

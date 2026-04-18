@@ -70,10 +70,12 @@ class ZonesPaneView {
       let x2 = null;
       if (zone.end_timestamp) {
         x2 = timeScale.timeToCoordinate(zone.end_timestamp);
-      }
-      if (x2 === null || x2 === undefined) {
+      } else if (src._endTime) {
+        x2 = timeScale.timeToCoordinate(src._endTime);
+      } else {
         x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
       }
+
       if (x2 === null || x2 === undefined) {
         x2 = x1 + 200;
       }
@@ -97,6 +99,7 @@ class ZonesPaneView {
 export class ZonesPrimitive {
   constructor() {
     this._zones = [];
+    this._endTime = null;
     this._chart = null;
     this._series = null;
     this._requestUpdate = null;
@@ -119,6 +122,13 @@ export class ZonesPrimitive {
 
   paneViews() {
     return [this._paneView];
+  }
+
+  setEndTime(time) {
+    this._endTime = time;
+    if (this._requestUpdate) {
+      this._requestUpdate();
+    }
   }
 
   setZones(zones) {
