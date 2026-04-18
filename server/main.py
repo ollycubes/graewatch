@@ -13,6 +13,9 @@ from routes import analysis as analysis_module
 from routes.setup import router as setup_router
 from routes import setup as setup_module
 
+from routes.zones import router as zones_router
+from routes import zones as zones_module
+
 load_dotenv(dotenv_path="../.env")
 
 app = FastAPI()
@@ -37,7 +40,9 @@ app.include_router(analysis_router)
 setup_module.db = db
 app.include_router(setup_router)
 
-# Register the route
+zones_module.db = db
+app.include_router(zones_router)
+
 app.include_router(candles_router)
 
 
