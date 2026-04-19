@@ -378,8 +378,15 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             }))
             .filter((c) => c.time !== null);
 
+          const timeScale = chartRef.current.timeScale();
+          const visibleRange = timeScale.getVisibleRange();
+
           seriesRef.current.setData(formatted);
           candleDataRef.current = formatted;
+
+          if (visibleRange) {
+            timeScale.setVisibleRange(visibleRange);
+          }
 
           if (selection && selection.start && selection.end) {
             // Update the selection box's candle count for the new interval
@@ -429,10 +436,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           const htfInterval = HTF_MAP[interval] || null;
           if (htfInterval) {
             fetchPromises.push(
-              fetch(`/api/analysis/bos?pair=${pair}&interval=${htfInterval}`, {
+              fetch(`/api/analysis/bos?pair=${pair}&interval=${htfInterval}${rangeParams}`, {
                 signal: abortController.signal,
               }),
-              fetch(`/api/analysis/gann?pair=${pair}&interval=${htfInterval}`, {
+              fetch(`/api/analysis/gann?pair=${pair}&interval=${htfInterval}${rangeParams}`, {
                 signal: abortController.signal,
               }),
               fetch(`/api/candles?pair=${pair}&interval=${htfInterval}`, {

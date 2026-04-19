@@ -91,7 +91,7 @@ async def get_analysis(
     if is_ranged:
         filtered = []
         for r in results:
-            ts = r.get("timestamp") or r.get("start_timestamp")
+            ts = r.get("source_timestamp") or r.get("start_timestamp") or r.get("timestamp")
             if ts:
                 if start and ts < start: continue
                 if end and ts > end: continue

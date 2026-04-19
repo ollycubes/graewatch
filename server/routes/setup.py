@@ -72,7 +72,7 @@ async def get_setup(
             return signals
         filtered = []
         for s in signals:
-            ts = s.get("timestamp") or s.get("start_timestamp")
+            ts = s.get("source_timestamp") or s.get("start_timestamp") or s.get("timestamp")
             if ts:
                 if start and ts < start: continue
                 if end and ts > end: continue

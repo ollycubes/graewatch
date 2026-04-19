@@ -127,7 +127,7 @@ async def get_confluence(
             def filter_signals(signals):
                 filtered = []
                 for s in signals:
-                    t = s.get("timestamp") or s.get("start_timestamp")
+                    t = s.get("source_timestamp") or s.get("start_timestamp") or s.get("timestamp")
                     if t:
                         if start and t < start: continue
                         if end and t > end: continue
