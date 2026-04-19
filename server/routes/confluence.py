@@ -43,14 +43,9 @@ async def _fetch_candles(
     end: str | None = None,
 ) -> list[dict]:
     """Fetch candles for one TF, optionally scoped to a time range."""
+    # We DO NOT filter candles by start/end here because detectors need future
+    # price action to identify mitigations. We will filter the signals instead.
     query: dict = {"pair": pair, "interval": interval}
-    if start is not None or end is not None:
-        ts: dict = {}
-        if start is not None:
-            ts["$gte"] = start
-        if end is not None:
-            ts["$lte"] = end
-        query["timestamp"] = ts
 
     cursor = col.find(
         query,
@@ -91,11 +86,8 @@ async def get_confluence(
 
     # ── Fetch all TF candles in parallel ─────────────────────────────────────
     async def fetch_tf(tf: str) -> tuple[str, list[dict]]:
-        # Only apply start/end filter on the current TF
-        if tf == normalized:
-            candles = await _fetch_candles(col, pair, tf, start, end)
-        else:
-            candles = await _fetch_candles(col, pair, tf)
+        # Fetch full dataset for ALL timeframes
+        candles = await _fetch_candles(col, pair, tf)
         return tf, candles
 
     candle_results = await asyncio.gather(*[fetch_tf(tf) for tf in relevant_tfs])
@@ -129,6 +121,25 @@ async def get_confluence(
             tf_wyckoff[tf] = COMPONENTS["wyckoff"](candles)
         if "gann" in detectors:
             tf_gann[tf] = COMPONENTS["gann"](candles)
+            
+        # Filter the current TF's signals by the selection range
+        if tf == normalized and (start is not None or end is not None):
+            def filter_signals(signals):
+                filtered = []
+                for s in signals:
+                    t = s.get("timestamp") or s.get("start_timestamp")
+                    if t:
+                        if start and t < start: continue
+                        if end and t > end: continue
+                    filtered.append(s)
+                return filtered
+                
+            if "bos" in detectors: tf_bos[tf] = filter_signals(tf_bos[tf])
+            if "fvg" in detectors: tf_fvg[tf] = filter_signals(tf_fvg[tf])
+            if "orderblocks" in detectors: tf_ob[tf] = filter_signals(tf_ob[tf])
+            if "liquidity" in detectors: tf_liq[tf] = filter_signals(tf_liq[tf])
+            if "wyckoff" in detectors: tf_wyckoff[tf] = filter_signals(tf_wyckoff[tf])
+            if "gann" in detectors: tf_gann[tf] = filter_signals(tf_gann[tf])
 
     # ── Run confluence engine ─────────────────────────────────────────────────
     result = detect_confluence(

@@ -65,15 +65,10 @@ async def get_analysis(
         if cached:
             return cached
 
-    # Build the candle query filter.
+    # We do NOT pre-filter the candles by start/end.
+    # The algorithms need to see future price action to determine mitigations.
+    # We will filter the *resulting signals* instead.
     candle_filter = {"pair": pair, "interval": normalized_interval}
-    if start is not None or end is not None:
-        ts_filter = {}
-        if start is not None:
-            ts_filter["$gte"] = start
-        if end is not None:
-            ts_filter["$lte"] = end
-        candle_filter["timestamp"] = ts_filter
 
     # Get candles from MongoDB only if analysis cache is stale/missing.
     cursor = candles_collection.find(
@@ -88,9 +83,20 @@ async def get_analysis(
             detail=f"No candle data found for {pair} {normalized_interval}. Fetch candles first.",
         )
 
-    # Run the algorithms
+    # Run the algorithms on the FULL dataset
     detect_fn = COMPONENTS[component]
     results = detect_fn(candles)
+
+    # Filter the signals to only include those originating in the user's selection
+    if is_ranged:
+        filtered = []
+        for r in results:
+            ts = r.get("timestamp") or r.get("start_timestamp")
+            if ts:
+                if start and ts < start: continue
+                if end and ts > end: continue
+            filtered.append(r)
+        results = filtered
 
     # Build the response payload.
     payload = {

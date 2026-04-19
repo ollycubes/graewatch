@@ -46,14 +46,9 @@ async def get_zones(
 
     candles_col = db["candles"]
 
+    # We DO NOT filter candles by start/end because the algorithms need to see
+    # future candles to determine if zones were mitigated after the selection.
     candle_filter: dict = {"pair": pair, "interval": normalized}
-    if start is not None or end is not None:
-        ts: dict = {}
-        if start is not None:
-            ts["$gte"] = start
-        if end is not None:
-            ts["$lte"] = end
-        candle_filter["timestamp"] = ts
 
     cursor = candles_col.find(
         candle_filter,
@@ -72,6 +67,24 @@ async def get_zones(
     ob = COMPONENTS["orderblocks"](candles)
     liq = COMPONENTS["liquidity"](candles)
     wyckoff = COMPONENTS["wyckoff"](candles)
+
+    def filter_signals(signals):
+        if start is None and end is None:
+            return signals
+        filtered = []
+        for s in signals:
+            t = s.get("timestamp") or s.get("start_timestamp")
+            if t:
+                if start and t < start: continue
+                if end and t > end: continue
+            filtered.append(s)
+        return filtered
+
+    bos = filter_signals(bos)
+    fvg = filter_signals(fvg)
+    ob = filter_signals(ob)
+    liq = filter_signals(liq)
+    wyckoff = filter_signals(wyckoff)
 
     htf_bos = None
     htf_gann = None

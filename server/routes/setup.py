@@ -43,14 +43,9 @@ async def get_setup(
     candles_collection = db["candles"]
 
     # ── Fetch candles (optionally scoped to selection range) ─────────────────
+    # We fetch ALL candles to allow algorithms to detect mitigations
+    # that occur after the selection window. We'll filter the signals later.
     candle_filter: dict = {"pair": pair, "interval": normalized_interval}
-    if start is not None or end is not None:
-        ts_filter: dict = {}
-        if start is not None:
-            ts_filter["$gte"] = start
-        if end is not None:
-            ts_filter["$lte"] = end
-        candle_filter["timestamp"] = ts_filter
 
     cursor = candles_collection.find(
         candle_filter,
@@ -70,6 +65,25 @@ async def get_setup(
     ob_signals = COMPONENTS["orderblocks"](candles)
     liq_signals = COMPONENTS["liquidity"](candles)
     wyckoff_signals = COMPONENTS["wyckoff"](candles)
+
+    # Filter signals to only those originating in the selection window
+    def filter_signals(signals):
+        if start is None and end is None:
+            return signals
+        filtered = []
+        for s in signals:
+            ts = s.get("timestamp") or s.get("start_timestamp")
+            if ts:
+                if start and ts < start: continue
+                if end and ts > end: continue
+            filtered.append(s)
+        return filtered
+
+    bos_signals = filter_signals(bos_signals)
+    fvg_signals = filter_signals(fvg_signals)
+    ob_signals = filter_signals(ob_signals)
+    liq_signals = filter_signals(liq_signals)
+    wyckoff_signals = filter_signals(wyckoff_signals)
 
     # ── HTF data for bias computation ────────────────────────────────────────
     htf_bos_signals = None
