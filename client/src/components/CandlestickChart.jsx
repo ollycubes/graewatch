@@ -379,13 +379,52 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             .filter((c) => c.time !== null);
 
           const timeScale = chartRef.current.timeScale();
-          const visibleRange = timeScale.getVisibleRange();
+          const oldLogicalRange = timeScale.getVisibleLogicalRange();
+
+          let visibleStartTime = null;
+          let visibleEndTime = null;
+
+          if (oldLogicalRange && candleDataRef.current && candleDataRef.current.length > 0) {
+            const oldData = candleDataRef.current;
+            const fromIdx = Math.max(0, Math.floor(oldLogicalRange.from));
+            const toIdx = Math.min(oldData.length - 1, Math.ceil(oldLogicalRange.to));
+            if (oldData[fromIdx]) visibleStartTime = oldData[fromIdx].time;
+            if (oldData[toIdx]) visibleEndTime = oldData[toIdx].time;
+          }
 
           seriesRef.current.setData(formatted);
           candleDataRef.current = formatted;
 
-          if (visibleRange) {
-            timeScale.setVisibleRange(visibleRange);
+          let newLogicalRange = null;
+
+          if (selection && selection.start && selection.end) {
+            const startT = toChartTime(selection.start);
+            const endT = toChartTime(selection.end);
+
+            let minIdx = formatted.findIndex((c) => c.time >= startT);
+            let maxIdx = formatted.findLastIndex((c) => c.time <= endT);
+
+            if (minIdx !== -1 && maxIdx !== -1 && minIdx <= maxIdx) {
+              const padding = Math.max(10, Math.floor((maxIdx - minIdx) * 0.2));
+              newLogicalRange = {
+                from: Math.max(0, minIdx - padding),
+                to: Math.min(formatted.length - 1, maxIdx + padding),
+              };
+            }
+          } else if (visibleStartTime !== null && visibleEndTime !== null) {
+            let minIdx = formatted.findIndex((c) => c.time >= visibleStartTime);
+            let maxIdx = formatted.findLastIndex((c) => c.time <= visibleEndTime);
+
+            if (minIdx === -1) minIdx = 0;
+            if (maxIdx === -1) maxIdx = formatted.length - 1;
+
+            if (minIdx <= maxIdx) {
+              newLogicalRange = { from: minIdx, to: maxIdx };
+            }
+          }
+
+          if (newLogicalRange) {
+            timeScale.setVisibleLogicalRange(newLogicalRange);
           }
 
           if (selection && selection.start && selection.end) {

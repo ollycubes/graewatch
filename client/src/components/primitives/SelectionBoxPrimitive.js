@@ -81,18 +81,30 @@ class SelectionBoxPaneView {
 
     const { startTime, endTime, candleCount } = src._selection;
     const timeScale = src._chart.timeScale();
+    const series = src._series;
 
-    const visibleRange = timeScale.getVisibleRange();
-    if (!visibleRange) return null;
+    const data = series.data();
+    if (!data || data.length === 0) return null;
 
-    // Skip if selection is entirely outside the loaded data range
-    if (endTime < visibleRange.from || startTime > visibleRange.to) return null;
+    // Find the closest logical index for startTime (first candle >= startTime)
+    let minIdx = data.findIndex((c) => c.time >= startTime);
+    if (minIdx === -1) minIdx = data.length - 1;
 
-    const clampedStart = Math.max(startTime, visibleRange.from);
-    const clampedEnd = Math.min(endTime, visibleRange.to);
+    // Find the closest logical index for endTime (last candle <= endTime)
+    let maxIdx = -1;
+    for (let i = data.length - 1; i >= 0; i--) {
+      if (data[i].time <= endTime) {
+        maxIdx = i;
+        break;
+      }
+    }
+    if (maxIdx === -1) maxIdx = 0;
 
-    const x1 = timeScale.timeToCoordinate(clampedStart);
-    const x2 = timeScale.timeToCoordinate(clampedEnd);
+    // We don't strictly need to clamp to the visible range, the canvas will
+    // automatically clip anything drawn outside its bounds, which allows the
+    // box to smoothly pan off-screen.
+    const x1 = timeScale.logicalToCoordinate(minIdx);
+    const x2 = timeScale.logicalToCoordinate(maxIdx);
 
     if (x1 === null || x2 === null) return null;
 
