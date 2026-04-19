@@ -113,6 +113,7 @@ async def get_setup(
         htf_bos_signals=htf_bos_signals,
         htf_gann_signals=htf_gann_signals,
         htf_candles=htf_candles,
+        htf_interval=htf_interval,
     )
 
     return {"pair": pair, "interval": normalized_interval, **result}

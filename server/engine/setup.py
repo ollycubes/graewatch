@@ -25,6 +25,7 @@ def detect(
     htf_gann_signals: list[dict] | None = None,
     htf_candles: list[dict] | None = None,
     wyckoff_signals: list[dict] | None = None,
+    htf_interval: str | None = None,
 ) -> dict:
     """
     Identify an SMC trade setup from current and higher-timeframe signals.
@@ -54,11 +55,42 @@ def detect(
         return _no_setup("neutral", current_close)
 
     # ── 2. Entry POI ─────────────────────────────────────────────────────────
-    entry_poi = _find_entry_poi(
-        bias, current_close, atr, ob_signals, fvg_signals, wyckoff_signals or []
+    # Instead of blindly picking the nearest zone, use the highly-accurate
+    # Confluence Zones engine to select the highest-scoring POI.
+    from engine.zones import detect_zones
+    
+    zones_result = detect_zones(
+        candles=candles,
+        bos_signals=bos_signals,
+        fvg_signals=fvg_signals,
+        ob_signals=ob_signals,
+        liq_signals=liq_signals,
+        wyckoff_signals=wyckoff_signals,
+        htf_bos_signals=htf_bos_signals,
+        htf_gann_signals=htf_gann_signals,
+        htf_candles=htf_candles,
+        htf_interval=htf_interval,
     )
-    if entry_poi is None:
+
+    if not zones_result.get("zones"):
         return _no_setup(bias, current_close)
+
+    # Grab the highest-scoring zone
+    best_zone = zones_result["zones"][0]
+    
+    # We must ensure the zone is actually close enough to current price to be a valid setup entry
+    # (e.g. within 5 ATR). The old engine enforced this.
+    zone_mid = (best_zone["top"] + best_zone["bottom"]) / 2
+    if bias == "bullish" and zone_mid > current_close + atr * 5:
+        return _no_setup(bias, current_close)
+    if bias == "bearish" and zone_mid < current_close - atr * 5:
+        return _no_setup(bias, current_close)
+
+    entry_poi = {
+        "top": best_zone["top"],
+        "bottom": best_zone["bottom"],
+        "type": best_zone["confluence_types"][0] if best_zone.get("confluence_types") else "confluence",
+    }
 
     # ── 3. Target ────────────────────────────────────────────────────────────
     target_price, target_type = _find_target(
@@ -153,103 +185,7 @@ def _determine_bias(
     return current_bias or "neutral"
 
 
-def _find_entry_poi(
-    bias: str,
-    current_close: float,
-    atr: float,
-    ob_signals: list[dict],
-    fvg_signals: list[dict],
-    wyckoff_signals: list[dict] | None = None,
-) -> dict | None:
-    """
-    Find the nearest entry POI in the bias direction.
 
-    Checks three sources in priority order:
-      1. Wyckoff Spring / Upthrust  — highest conviction: structural event
-         confirmed by a wick-and-close-back-inside at a range boundary.
-      2. Unmitigated Order Block    — institutional supply/demand zone.
-      3. Unmitigated FVG            — price imbalance acting as a magnet.
-
-    For a bullish setup the POI should sit at or below current price.
-    For bearish, at or above.  Zones more than 5 ATR away are ignored.
-    """
-    max_dist = atr * 5
-    candidates = []
-
-    # ── Wyckoff Spring / Upthrust ────────────────────────────────────────────
-    for wy in (wyckoff_signals or []):
-        if wy.get("direction") != bias:
-            continue
-        # The level is the range boundary that was swept — treat a 1-ATR band
-        # around it as the entry zone.
-        level = wy["level"]
-        if bias == "bullish":
-            top = level + atr * 0.5
-            bottom = level - atr * 0.5
-            if top > current_close + atr:
-                continue
-        else:
-            top = level + atr * 0.5
-            bottom = level - atr * 0.5
-            if bottom < current_close - atr:
-                continue
-        dist = abs(level - current_close)
-        if dist <= max_dist:
-            candidates.append({
-                "type": "wyckoff",
-                "top": round(top, 5),
-                "bottom": round(bottom, 5),
-                "dist": dist,
-                "priority": 0,  # highest priority
-            })
-
-    # ── Order Blocks ─────────────────────────────────────────────────────────
-    for ob in ob_signals:
-        if ob.get("end_timestamp") is not None:
-            continue
-        if ob["direction"] != bias:
-            continue
-        zone_mid = (ob["top"] + ob["bottom"]) / 2
-        if bias == "bullish" and zone_mid > current_close + atr:
-            continue
-        if bias == "bearish" and zone_mid < current_close - atr:
-            continue
-        dist = abs(zone_mid - current_close)
-        if dist <= max_dist:
-            candidates.append({
-                "type": "ob",
-                "top": ob["top"],
-                "bottom": ob["bottom"],
-                "dist": dist,
-                "priority": 1,
-            })
-
-    # ── FVGs ─────────────────────────────────────────────────────────────────
-    for fvg in fvg_signals:
-        if fvg.get("end_timestamp") is not None:
-            continue
-        if fvg["direction"] != bias:
-            continue
-        zone_mid = (fvg["top"] + fvg["bottom"]) / 2
-        if bias == "bullish" and zone_mid > current_close + atr:
-            continue
-        if bias == "bearish" and zone_mid < current_close - atr:
-            continue
-        dist = abs(zone_mid - current_close)
-        if dist <= max_dist:
-            candidates.append({
-                "type": "fvg",
-                "top": fvg["top"],
-                "bottom": fvg["bottom"],
-                "dist": dist,
-                "priority": 2,
-            })
-
-    if not candidates:
-        return None
-
-    # Prefer by priority first, then by proximity
-    return min(candidates, key=lambda x: (x["priority"], x["dist"]))
 
 
 def _find_target(
