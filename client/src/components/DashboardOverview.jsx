@@ -29,42 +29,48 @@ function DashboardOverview() {
 
   return (
     <section className="dashboard__panel">
-      <header className="dashboard__header">
-        <h1>Graewatch</h1>
-        <p>
-          Top-down SMC analysis ·{' '}
-          <span className="dashboard__step-badge">
-            Step {state.checklist.currentStep}: {currentStepDef?.title}
-          </span>
-        </p>
+      <header className="dashboard__top-bar">
+        <div className="dashboard__branding">
+          <h1>Graewatch</h1>
+          <p>Top-down SMC analysis</p>
+        </div>
+        
+        <div className="dashboard__step-indicator">
+          <span className="step-label">Step {state.checklist.currentStep}</span>
+          <span className="step-title">{currentStepDef?.title}</span>
+        </div>
       </header>
 
       <div className="dashboard__controls" aria-label="Chart controls">
-        <PairSelector />
+        <div className="dashboard__controls-primary">
+          <PairSelector />
+          
+          <label className="control">
+            <span>Interval</span>
+            <select
+              value={state.interval}
+              onChange={(e) => dispatch({ type: 'SET_INTERVAL', payload: e.target.value })}
+            >
+              {intervals.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="control">
-          <span>Interval</span>
-          <select
-            value={state.interval}
-            onChange={(e) => dispatch({ type: 'SET_INTERVAL', payload: e.target.value })}
-          >
-            {intervals.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="dashboard__interval-hint">
-          {currentStepDef?.interval && (
-            <span className="interval-hint">
-              📊 Viewing: {currentStepDef.interval.toUpperCase()}
-            </span>
-          )}
+          <div className="dashboard__interval-hint">
+            {currentStepDef?.interval && (
+              <span className="interval-hint">
+                <span className="icon">📊</span> Viewing: {currentStepDef.interval.toUpperCase()}
+              </span>
+            )}
+          </div>
         </div>
 
-        <OverlayToggles />
+        <div className="dashboard__controls-secondary">
+          <OverlayToggles />
+        </div>
       </div>
 
       <div className="dashboard__prediction-bar">
