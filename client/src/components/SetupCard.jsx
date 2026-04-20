@@ -26,51 +26,6 @@ function BiasBadge({ bias }) {
   return <span className={`setup-card__bias ${cls}`}>{label}</span>;
 }
 
-function SetupRow({ label, value, tag, highlight }) {
-  return (
-    <div className={`setup-card__row${highlight ? ' setup-card__row--highlight' : ''}`}>
-      <span className="setup-card__row-label">{label}</span>
-      <span className="setup-card__row-value">
-        {value}
-        {tag && <span className="setup-card__tag">{tag}</span>}
-      </span>
-    </div>
-  );
-}
-
-function ScoreBar({ zone }) {
-  if (!zone) return null;
-  const bd = zone.score_breakdown || {};
-  const items = [
-    { key: 'Type', val: bd.type },
-    { key: 'Prox', val: bd.proximity },
-    { key: 'POI', val: bd.at_poi },
-    { key: 'Liq', val: bd.liquidity },
-    { key: 'TF', val: bd.tf_confluence },
-    { key: 'Conf', val: bd.cluster },
-  ].filter((i) => i.val > 0);
-
-  const tfMatches = zone.tf_matches || [];
-
-  return (
-    <div className="zone-score-bar">
-      <span className="zone-score-bar__total">{zone.score}</span>
-      {items.map((i) => (
-        <span key={i.key} className="zone-score-bar__item">
-          {i.key} +{i.val}
-        </span>
-      ))}
-      {zone.cluster_size > 1 && (
-        <span className="zone-score-bar__confluence">×{zone.cluster_size}</span>
-      )}
-      {tfMatches.map((tf) => (
-        <span key={tf} className="zone-score-bar__tf">
-          {TF_SHORT[tf] ?? tf}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
 const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
@@ -158,42 +113,55 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
 
   return (
     <div className="setup-card">
-      {/* Left: meta + bias */}
-      <div className="setup-card__left">
-        <span className="setup-card__pair">{pair} · {interval.toUpperCase()}</span>
-        {setup && <BiasBadge bias={setup.bias} />}
-        {!setup && !loading && !error && (
-          <span className="setup-card__hint">Draw a selection to analyse a setup</span>
-        )}
-        {loading && <span className="setup-card__hint">Analysing…</span>}
-        {error && <span className="setup-card__error">{error}</span>}
+      {/* Left: pair + bias + bias chain */}
+      <div className="setup-card__meta">
+        <div className="setup-card__meta-top">
+          <span className="setup-card__pair">{pair} · {interval.toUpperCase()}</span>
+          {setup && <BiasBadge bias={setup.bias} />}
+          {!setup && !loading && !error && (
+            <span className="setup-card__hint">Draw a selection to analyse a setup</span>
+          )}
+          {loading && <span className="setup-card__hint">Analysing…</span>}
+          {error && <span className="setup-card__error">{error}</span>}
+        </div>
+        {biasChain && <BiasChain chain={biasChain} />}
       </div>
 
-      {biasChain && <BiasChain chain={biasChain} />}
+      {/* Divider */}
+      {setup && setup.valid && <div className="setup-card__divider" />}
 
-      {/* Centre: setup levels */}
+      {/* Centre: entry / target / stop */}
       {setup && setup.valid && (
         <div className="setup-card__levels">
-          <SetupRow
-            label="Entry"
-            value={`${formatPrice(entryBottom)} – ${formatPrice(entryTop)}`}
-            tag={TYPE_LABELS[entryType]}
-            highlight={atPoi}
-          />
-          <ScoreBar zone={topZone} />
-          <SetupRow
-            label="Target"
-            value={formatPrice(setup.target)}
-            tag={TYPE_LABELS[setup.target_type]}
-          />
-          <SetupRow label="Stop" value={formatPrice(setup.stop)} />
-        </div>
-      )}
+          <div className={`setup-card__level${atPoi ? ' setup-card__level--poi' : ''}`}>
+            <span className="setup-card__level-label">ENTRY</span>
+            <span className="setup-card__level-value">
+              {formatPrice(entryBottom)} – {formatPrice(entryTop)}
+            </span>
+            <div className="setup-card__level-tags">
+              {entryType && <span className="setup-card__tag">{TYPE_LABELS[entryType]}</span>}
+              {topZone?.score != null && (
+                <span className="setup-card__score">{topZone.score}</span>
+              )}
+            </div>
+          </div>
 
-      {setup && setup.valid && (
-        <div className="setup-card__rr">
-          <span className="setup-card__rr-label">R : R</span>
-          <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
+          <div className="setup-card__level-sep" />
+
+          <div className="setup-card__level">
+            <span className="setup-card__level-label">TARGET</span>
+            <span className="setup-card__level-value">{formatPrice(setup.target)}</span>
+            {setup.target_type && (
+              <span className="setup-card__tag">{TYPE_LABELS[setup.target_type]}</span>
+            )}
+          </div>
+
+          <div className="setup-card__level-sep" />
+
+          <div className="setup-card__level">
+            <span className="setup-card__level-label">STOP</span>
+            <span className="setup-card__level-value">{formatPrice(setup.stop)}</span>
+          </div>
         </div>
       )}
 
@@ -201,7 +169,18 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
         <span className="setup-card__no-setup">No setup found at this timeframe</span>
       )}
 
-      {/* Right: selection badge + clear */}
+      {/* Divider */}
+      {setup && setup.valid && <div className="setup-card__divider" />}
+
+      {/* R:R */}
+      {setup && setup.valid && (
+        <div className="setup-card__rr">
+          <span className="setup-card__rr-label">R : R</span>
+          <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
+        </div>
+      )}
+
+      {/* Right: selection dates + clear */}
       {selection && (
         <div className="setup-card__selection">
           <span className="setup-card__selection-dates">

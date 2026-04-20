@@ -1029,25 +1029,32 @@ body {
 .setup-card {
   display: flex;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 0;
   width: 100%;
-  padding: 10px 16px;
+  padding: 8px 16px;
   border: 1px solid rgba(150, 126, 118, 0.4);
   border-radius: 14px;
   background: linear-gradient(145deg, #faf5ea 0%, #f5ecda 100%);
   animation: section-fadein 0.35s ease-out;
+  overflow: hidden;
 }
 
-.setup-card__left {
+.setup-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding-right: 16px;
+}
+
+.setup-card__meta-top {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
+  gap: 8px;
 }
 
 .setup-card__pair {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #4f4039;
   white-space: nowrap;
@@ -1055,9 +1062,9 @@ body {
 
 .setup-card__bias {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 2px 8px;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -1088,71 +1095,95 @@ body {
   color: #8f3535;
 }
 
+.setup-card__divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(150, 126, 118, 0.3);
+  flex-shrink: 0;
+  margin: 0 16px;
+}
+
 .setup-card__levels {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0;
   flex: 1;
-  flex-wrap: wrap;
 }
 
-.setup-card__row {
+.setup-card__level {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(150, 126, 118, 0.08);
+  padding: 2px 0;
 }
 
-.setup-card__row--highlight {
-  background: rgba(38, 166, 154, 0.12);
-  border: 1px solid rgba(38, 166, 154, 0.3);
+.setup-card__level--poi .setup-card__level-value {
+  color: #1b7a70;
 }
 
-.setup-card__row-label {
-  font-size: 0.72rem;
+.setup-card__level-sep {
+  width: 1px;
+  height: 24px;
+  background: rgba(150, 126, 118, 0.2);
+  flex-shrink: 0;
+  margin: 0 14px;
+  align-self: center;
+}
+
+.setup-card__level-label {
+  font-size: 0.68rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
 }
 
-.setup-card__row-value {
-  font-size: 0.85rem;
-  font-weight: 600;
+.setup-card__level-value {
+  font-size: 0.88rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.setup-card__level-tags {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .setup-card__tag {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   font-weight: 700;
-  background: rgba(79, 64, 57, 0.12);
+  background: rgba(79, 64, 57, 0.1);
   color: #4f4039;
   letter-spacing: 0.04em;
 }
 
+.setup-card__score {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(140, 90, 10, 0.85);
+  padding: 1px 5px;
+  background: rgba(212, 160, 50, 0.15);
+  border-radius: 4px;
+}
+
 .setup-card__rr {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 8px;
-  background: rgba(79, 64, 57, 0.08);
+  align-items: baseline;
+  gap: 5px;
   flex: 0 0 auto;
 }
 
 .setup-card__rr-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
 .setup-card__rr-value {
@@ -1171,14 +1202,17 @@ body {
 .setup-card__selection {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: 16px;
 }
 
 .setup-card__selection-dates {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .setup-card__clear {
@@ -1195,42 +1229,6 @@ body {
 
 .setup-card__clear:hover {
   opacity: 1;
-}
-
-/* ── Zone Score Bar (SetupCard entry row) ── */
-
-.zone-score-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 3px 6px;
-  margin: 2px 0 4px;
-  background: rgba(212, 160, 50, 0.1);
-  border-left: 2px solid rgba(180, 120, 20, 0.5);
-  border-radius: 4px;
-  font-size: 0.72rem;
-}
-
-.zone-score-bar__total {
-  font-weight: 700;
-  color: rgba(140, 90, 10, 0.9);
-  margin-right: 2px;
-}
-
-.zone-score-bar__item {
-  padding: 1px 5px;
-  background: rgba(212, 160, 50, 0.15);
-  border-radius: 3px;
-  color: var(--text-muted);
-}
-
-.zone-score-bar__confluence {
-  padding: 1px 5px;
-  background: rgba(58, 158, 126, 0.15);
-  border-radius: 3px;
-  color: var(--step-done);
-  font-weight: 600;
 }
 
 /* ── Zone Conviction (SummaryPanel) ── */
