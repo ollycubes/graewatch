@@ -163,6 +163,8 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!selection) {
@@ -213,6 +215,38 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
     fetchAll();
     return () => ctrl.abort();
   }, [pair, interval, selection, onSetup]);
+
+  async function handleSave() {
+    if (!selection || saving) return;
+    setSaving(true);
+    setSaved(false);
+    try {
+      await fetch('/api/snapshots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pair,
+          interval,
+          selection_start: selection.start,
+          selection_end: selection.end,
+          bias: setup?.bias ?? null,
+          entry_top: setup?.entry_top ?? null,
+          entry_bottom: setup?.entry_bottom ?? null,
+          entry_type: setup?.entry_type ?? null,
+          target: setup?.target ?? null,
+          target_type: setup?.target_type ?? null,
+          stop: setup?.stop ?? null,
+          risk_reward: setup?.risk_reward ?? null,
+        }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // silent fail — non-critical
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const topZone = zones[0] ?? null;
   const entryTop = topZone ? topZone.top : setup?.entry_top;
@@ -295,12 +329,20 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
           </div>
         )}
 
-        {/* Right: selection dates + clear */}
+        {/* Right: selection dates + save + clear */}
         {selection && (
           <div className="setup-card__selection" onClick={(e) => e.stopPropagation()}>
             <span className="setup-card__selection-dates">
               {formatDate(selection.start)} → {formatDate(selection.end)}
             </span>
+            <button
+              className={`setup-card__save${saved ? ' setup-card__save--done' : ''}`}
+              onClick={handleSave}
+              disabled={saving}
+              title="Save snapshot"
+            >
+              {saved ? '✓ Saved' : saving ? '…' : 'Save'}
+            </button>
             <button
               className="setup-card__clear"
               onClick={onClearSelection}

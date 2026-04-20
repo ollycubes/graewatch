@@ -7,6 +7,7 @@ import PairSelector from './PairSelector';
 import ChecklistSidebar from './ChecklistSidebar';
 import SetupCard from './SetupCard';
 import OverlayToggles from './OverlayToggles';
+import SnapshotHistory from './SnapshotHistory';
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
 
@@ -99,6 +100,8 @@ function DashboardOverview() {
           </div>
         </div>
       </div>
+
+      <SnapshotHistory pair={state.pair} />
 
     </section>
   );

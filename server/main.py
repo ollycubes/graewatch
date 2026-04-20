@@ -19,6 +19,9 @@ from routes import zones as zones_module
 from routes.confluence import router as confluence_router
 from routes import confluence as confluence_module
 
+from routes.snapshots import router as snapshots_router
+from routes import snapshots as snapshots_module
+
 load_dotenv(dotenv_path="../.env")
 
 app = FastAPI()
@@ -49,6 +52,9 @@ app.include_router(zones_router)
 confluence_module.db = db
 app.include_router(confluence_router)
 
+snapshots_module.db = db
+app.include_router(snapshots_router)
+
 app.include_router(candles_router)
 
 
@@ -77,3 +83,4 @@ async def create_indexes():
     await db["analysis"].create_index(
         [("component", 1), ("pair", 1), ("interval", 1), ("candles_fetched_at", -1)],
     )
+    await db["snapshots"].create_index([("saved_at", -1)])

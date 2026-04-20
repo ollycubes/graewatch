@@ -1499,3 +1499,182 @@ body {
   background: rgba(150, 126, 118, 0.12);
   color: var(--text-muted);
 }
+
+/* ── Save button on SetupCard ──────────────────────────────────────────────── */
+.setup-card__save {
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(150, 126, 118, 0.4);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.setup-card__save:hover:not(:disabled) {
+  background: rgba(150, 126, 118, 0.12);
+  color: var(--text-primary);
+  border-color: rgba(150, 126, 118, 0.7);
+}
+.setup-card__save--done {
+  border-color: var(--step-done);
+  color: var(--step-done);
+}
+.setup-card__save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Snapshot History panel ────────────────────────────────────────────────── */
+.snapshot-history {
+  margin: 0 16px 24px;
+  border: 1px solid rgba(150, 126, 118, 0.25);
+  border-radius: 14px;
+  background: #faf8f7;
+  padding: 16px 20px;
+}
+
+.snapshot-history__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.snapshot-history__title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+
+.snapshot-history__refresh {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.snapshot-history__refresh:hover {
+  background: rgba(150, 126, 118, 0.12);
+  color: var(--text-primary);
+}
+
+.snapshot-history__empty {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.snapshot-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Snapshot card ─────────────────────────────────────────────────────────── */
+.snapshot-card {
+  border: 1px solid rgba(150, 126, 118, 0.2);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.snapshot-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.snapshot-card__pair {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.snapshot-card__bias {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.snapshot-card__saved-at {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.snapshot-card__delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 2px 5px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.snapshot-card__delete:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+.snapshot-card__delete--confirm {
+  color: #e74c3c;
+  font-weight: 700;
+}
+
+.snapshot-card__range {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.snapshot-card__levels {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.snapshot-card__level {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.snapshot-card__level-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.snapshot-card__level-value {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.snapshot-card__tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(150, 126, 118, 0.12);
+  color: var(--text-muted);
+}
+
+.snapshot-card__no-setup {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
