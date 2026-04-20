@@ -25,6 +25,7 @@ function formatSavedAt(iso) {
 
 function SnapshotCard({ snap, onDelete }) {
   const [confirming, setConfirming] = useState(false);
+  const [imgOpen, setImgOpen] = useState(false);
 
   function handleDelete(e) {
     e.stopPropagation();
@@ -42,6 +43,15 @@ function SnapshotCard({ snap, onDelete }) {
           </span>
         )}
         <span className="snapshot-card__saved-at">{formatSavedAt(snap.saved_at)}</span>
+        {snap.screenshot && (
+          <button
+            className="snapshot-card__toggle-img"
+            onClick={() => setImgOpen((o) => !o)}
+            title={imgOpen ? 'Hide chart' : 'Show chart'}
+          >
+            {imgOpen ? '▲ Chart' : '▼ Chart'}
+          </button>
+        )}
         <button
           className={`snapshot-card__delete${confirming ? ' snapshot-card__delete--confirm' : ''}`}
           onClick={handleDelete}
@@ -91,13 +101,11 @@ function SnapshotCard({ snap, onDelete }) {
         <div className="snapshot-card__no-setup">No valid setup at time of save</div>
       )}
 
-      {snap.screenshot && (
+      {snap.screenshot && imgOpen && (
         <img
           className="snapshot-card__screenshot"
           src={snap.screenshot}
           alt="Chart snapshot"
-          onClick={() => window.open(snap.screenshot)}
-          title="Click to open full size"
         />
       )}
     </div>

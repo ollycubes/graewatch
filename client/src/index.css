@@ -1690,3 +1690,19 @@ body {
 .snapshot-card__screenshot:hover {
   opacity: 0.85;
 }
+
+.snapshot-card__toggle-img {
+  background: none;
+  border: 1px solid rgba(150, 126, 118, 0.3);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 2px 7px;
+  transition: background 0.15s, color 0.15s;
+}
+.snapshot-card__toggle-img:hover {
+  background: rgba(150, 126, 118, 0.1);
+  color: var(--text-primary);
+}

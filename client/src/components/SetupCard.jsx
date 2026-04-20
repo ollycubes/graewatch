@@ -221,6 +221,8 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
     setSaving(true);
     setSaved(false);
     try {
+      // Small delay ensures chart primitives (entry/target/stop) have painted before capture
+      await new Promise((r) => setTimeout(r, 120));
       const screenshot = screenshotRef?.current ? screenshotRef.current() : null;
       await fetch('/api/snapshots', {
         method: 'POST',
