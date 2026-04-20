@@ -57,7 +57,7 @@ class ZonesPaneView {
 
     const timeScale = src._chart.timeScale();
     const series = src._series;
-    const visibleRange = timeScale.getVisibleRange();
+    const visibleRange = timeScale.getVisibleLogicalRange();
 
     const boxes = [];
     for (const zone of src._zones) {
@@ -73,7 +73,7 @@ class ZonesPaneView {
       } else if (src._endTime) {
         x2 = timeScale.timeToCoordinate(src._endTime);
       } else {
-        x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
+        x2 = visibleRange ? timeScale.logicalToCoordinate(visibleRange.to) : null;
       }
 
       if (x2 === null || x2 === undefined) {

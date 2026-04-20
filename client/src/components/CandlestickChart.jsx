@@ -606,11 +606,13 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           }
 
           // Fetch setup + zones only when a selection is active
+          // We intentionally fetch these using the 15min entry timeframe so that the 
+          // granular entry/target/stop levels persist visually across all higher timeframes.
           if (selection && rangeParams) {
             try {
               const [setupRes, zonesRes] = await Promise.allSettled([
-                fetch(`/api/setup?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
-                fetch(`/api/confluence?pair=${pair}&interval=${interval}${rangeParams}`, { signal: abortController.signal }),
+                fetch(`/api/setup?pair=${pair}&interval=15min${rangeParams}`, { signal: abortController.signal }),
+                fetch(`/api/confluence?pair=${pair}&interval=15min${rangeParams}`, { signal: abortController.signal }),
               ]);
               if (setupRes.status === 'fulfilled' && setupRes.value.ok && setupPrimitiveRef.current) {
                 const setupData = await setupRes.value.json();

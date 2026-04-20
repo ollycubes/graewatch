@@ -114,7 +114,9 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
       setLoading(true);
       setError('');
       const range = `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
-      const base = `pair=${pair}&interval=${interval}${range}`;
+      // We explicitly fetch the 15min setup to ensure the granular entry logic
+      // is displayed consistently across all higher timeframes.
+      const base = `pair=${pair}&interval=15min${range}`;
 
       try {
         const [setupRes, zonesRes] = await Promise.allSettled([

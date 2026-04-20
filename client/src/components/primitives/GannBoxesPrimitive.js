@@ -76,7 +76,7 @@ class GannBoxesPaneView {
 
     const timeScale = src._chart.timeScale();
     const series = src._series;
-    const visibleRange = timeScale.getVisibleRange();
+    const visibleRange = timeScale.getVisibleLogicalRange();
 
     const boxes = [];
     for (const gann of src._gannBoxes) {
@@ -95,7 +95,7 @@ class GannBoxesPaneView {
       }
       
       if (x2 == null) {
-        x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : x1 + 200;
+        x2 = visibleRange ? timeScale.logicalToCoordinate(visibleRange.to) : x1 + 200;
       }
       if (x2 == null) x2 = x1 + 200;
 

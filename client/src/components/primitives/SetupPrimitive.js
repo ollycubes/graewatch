@@ -121,10 +121,12 @@ class SetupPaneView {
     const timeScale = src._chart.timeScale();
     const series = src._series;
 
-    const visibleRange = timeScale.getVisibleRange();
-    if (!visibleRange) return null;
+    const data = series.data();
+    if (!data || data.length === 0) return null;
 
-    const xRight = timeScale.timeToCoordinate(visibleRange.to);
+    // Anchor the setup lines to the last candle of the data
+    const lastIndex = data.length - 1;
+    const xRight = timeScale.logicalToCoordinate(lastIndex);
     if (xRight === null) return null;
 
     const yEntryTop = series.priceToCoordinate(setup.entry_top);

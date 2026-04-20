@@ -43,15 +43,18 @@ async def get_setup(
     candles_collection = db["candles"]
 
     # ── Fetch candles (optionally scoped to selection range) ─────────────────
-    # We fetch ALL candles to allow algorithms to detect mitigations
-    # that occur after the selection window. We'll filter the signals later.
+    # We fetch ALL candles up to the end date to allow algorithms to detect mitigations.
+    # We'll filter the resulting signals later.
     candle_filter: dict = {"pair": pair, "interval": normalized_interval}
+    if end:
+        candle_filter["timestamp"] = {"$lte": end}
 
     cursor = candles_collection.find(
         candle_filter,
         {"_id": 0, "timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
-    ).sort("timestamp", 1)
+    ).sort("timestamp", -1)
     candles = await cursor.to_list(length=5000)
+    candles.reverse()
 
     if not candles:
         raise HTTPException(
@@ -92,11 +95,16 @@ async def get_setup(
     htf_interval = HTF_MAP.get(normalized_interval)
 
     if htf_interval:
+        htf_filter = {"pair": pair, "interval": htf_interval}
+        if end:
+            htf_filter["timestamp"] = {"$lte": end}
+            
         htf_cursor = candles_collection.find(
-            {"pair": pair, "interval": htf_interval},
+            htf_filter,
             {"_id": 0, "timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
-        ).sort("timestamp", 1)
+        ).sort("timestamp", -1)
         htf_candles = await htf_cursor.to_list(length=5000)
+        htf_candles.reverse()
 
         if htf_candles:
             htf_bos_signals = COMPONENTS["bos"](htf_candles)

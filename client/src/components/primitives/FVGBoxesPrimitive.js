@@ -48,7 +48,7 @@ class FVGBoxesPaneView {
 
     const timeScale = src._chart.timeScale();
     const series = src._series;
-    const visibleRange = timeScale.getVisibleRange();
+    const visibleRange = timeScale.getVisibleLogicalRange();
 
     const boxes = [];
     for (const fvg of src._fvgZones) {
@@ -65,7 +65,7 @@ class FVGBoxesPaneView {
       } else if (src._endTime) {
         x2 = timeScale.timeToCoordinate(src._endTime);
       } else {
-        x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
+        x2 = visibleRange ? timeScale.logicalToCoordinate(visibleRange.to) : null;
       }
 
       if (x2 === null || x2 === undefined) {

@@ -43,15 +43,19 @@ async def _fetch_candles(
     end: str | None = None,
 ) -> list[dict]:
     """Fetch candles for one TF, optionally scoped to a time range."""
-    # We DO NOT filter candles by start/end here because detectors need future
-    # price action to identify mitigations. We will filter the signals instead.
+    # We fetch ALL candles up to the end date to allow algorithms to detect mitigations.
+    # We will filter the signals instead.
     query: dict = {"pair": pair, "interval": interval}
+    if end:
+        query["timestamp"] = {"$lte": end}
 
     cursor = col.find(
         query,
         {"_id": 0, "timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
-    ).sort("timestamp", 1)
-    return await cursor.to_list(length=5000)
+    ).sort("timestamp", -1)
+    candles = await cursor.to_list(length=5000)
+    candles.reverse()
+    return candles
 
 
 @router.get("/api/confluence")
@@ -86,8 +90,8 @@ async def get_confluence(
 
     # ── Fetch all TF candles in parallel ─────────────────────────────────────
     async def fetch_tf(tf: str) -> tuple[str, list[dict]]:
-        # Fetch full dataset for ALL timeframes
-        candles = await _fetch_candles(col, pair, tf)
+        # Fetch full dataset for ALL timeframes up to end date
+        candles = await _fetch_candles(col, pair, tf, start, end)
         return tf, candles
 
     candle_results = await asyncio.gather(*[fetch_tf(tf) for tf in relevant_tfs])

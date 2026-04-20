@@ -69,13 +69,16 @@ async def get_analysis(
     # The algorithms need to see future price action to determine mitigations.
     # We will filter the *resulting signals* instead.
     candle_filter = {"pair": pair, "interval": normalized_interval}
+    if end:
+        candle_filter["timestamp"] = {"$lte": end}
 
     # Get candles from MongoDB only if analysis cache is stale/missing.
     cursor = candles_collection.find(
         candle_filter,
         {"_id": 0, "timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
-    ).sort("timestamp", 1)
+    ).sort("timestamp", -1)
     candles = await cursor.to_list(length=5000)
+    candles.reverse()
 
     if not candles:
         raise HTTPException(

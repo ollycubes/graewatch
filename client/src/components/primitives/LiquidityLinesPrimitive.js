@@ -83,7 +83,7 @@ class LiquidityLinesPaneView {
 
     const timeScale = src._chart.timeScale();
     const series = src._series;
-    const visibleRange = timeScale.getVisibleRange();
+    const visibleRange = timeScale.getVisibleLogicalRange();
 
     const lines = [];
     for (const liq of src._liqLines) {
@@ -102,7 +102,7 @@ class LiquidityLinesPaneView {
         if (x2 === null) x2 = x1 + 400;
       } else {
         // Extend to the visible right edge (or a safe fallback)
-        x2 = visibleRange ? timeScale.timeToCoordinate(visibleRange.to) : null;
+        x2 = visibleRange ? timeScale.logicalToCoordinate(visibleRange.to) : null;
         if (x2 === null) x2 = x1 + 400;
       }
 
