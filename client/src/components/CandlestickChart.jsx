@@ -610,7 +610,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           }
 
           // Fetch setup + zones only when a selection is active
-          // We intentionally fetch these using the 15min entry timeframe so that the 
+          // We intentionally fetch these using the 15min entry timeframe so that the
           // granular entry/target/stop levels persist visually across all higher timeframes.
           if (selection && rangeParams) {
             try {
@@ -847,12 +847,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     }
   }, [selection]);
 
-  // Sync selection end time to primitives so zones don't extend past the selection
+  // Sync selection end time to Gann/Liq primitives only — FVG/OB zones extend
+  // to the right edge naturally based on their own mitigation timestamps.
   useEffect(() => {
     const endChartTime = selection?.end ? toChartTime(selection.end) : null;
-    if (fvgPrimitiveRef.current) fvgPrimitiveRef.current.setEndTime(endChartTime);
-    if (obPrimitiveRef.current) obPrimitiveRef.current.setEndTime(endChartTime);
-    if (zonesPrimitiveRef.current) zonesPrimitiveRef.current.setEndTime(endChartTime);
     if (liqPrimitiveRef.current) liqPrimitiveRef.current.setEndTime(endChartTime);
     if (gannPrimitiveRef.current) gannPrimitiveRef.current.setEndTime(endChartTime);
   }, [selection]);

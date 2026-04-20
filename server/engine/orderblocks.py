@@ -110,9 +110,14 @@ def detect(candles: list[dict]) -> list[dict]:
                 })
             last_swing_low = None
 
-    # ── Step 3: Check mitigation for each OB ─────────────────────────────
+    # ── Step 3: Check mitigation and filter thin zones ───────────────────
+    atr = _compute_atr(candles)
+    min_zone = atr * 0.1  # discard OBs thinner than 10% of ATR
+
     results: list[dict] = []
     for ob in ob_events:
+        if ob["top"] - ob["bottom"] < min_zone:
+            continue
         end_timestamp = _find_mitigation(candles, ob)
         results.append({
             "timestamp": ob["timestamp"],
@@ -123,6 +128,17 @@ def detect(candles: list[dict]) -> list[dict]:
         })
 
     return results
+
+
+def _compute_atr(candles: list[dict], period: int = 14) -> float:
+    if len(candles) < 2:
+        return 0.0001
+    true_ranges = []
+    for i in range(1, len(candles)):
+        h, l, pc = candles[i]["high"], candles[i]["low"], candles[i - 1]["close"]
+        true_ranges.append(max(h - l, abs(h - pc), abs(l - pc)))
+    recent = true_ranges[-period:]
+    return sum(recent) / len(recent) if recent else 0.0001
 
 
 def _find_last_opposing_candle(
