@@ -5,7 +5,6 @@ import { useCallback } from 'react';
 import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import ChecklistSidebar from './ChecklistSidebar';
-import SummaryPanel from './SummaryPanel';
 import SetupCard from './SetupCard';
 import OverlayToggles from './OverlayToggles';
 import { useDashboard } from '../context/useDashboard';
@@ -68,9 +67,6 @@ function DashboardOverview() {
           </div>
         </div>
 
-        <div className="dashboard__controls-secondary">
-          <OverlayToggles />
-        </div>
       </div>
 
       <div className="dashboard__prediction-bar">
@@ -98,12 +94,12 @@ function DashboardOverview() {
               showWyckoff={state.overlays.wyckoff}
               selection={state.selection}
               onSelectionChange={handleSelectionChange}
+              toolbarExtras={<OverlayToggles />}
             />
           </div>
         </div>
       </div>
 
-      <SummaryPanel pair={state.pair} interval={state.interval} selection={state.selection} />
     </section>
   );
 }

@@ -9,8 +9,8 @@ def detect(candles: list[dict]) -> list[dict]:
     A bearish OB is the last bullish candle before a bearish BOS (close below swing low).
 
     Zone ranges:
-        - Bullish OB (bearish candle): open → high (top wick)
-        - Bearish OB (bullish candle): low (bottom wick) → open
+        - Bullish OB (bearish candle): open → low (bottom wick)
+        - Bearish OB (bullish candle): open → high (top wick)
     Mitigation occurs when a later candle's wick enters the OB zone.
 
     Returns a list of dicts with:
@@ -85,8 +85,8 @@ def detect(candles: list[dict]) -> list[dict]:
                     "ob_index": ob_candle["index"],
                     "bos_index": i,
                     "direction": "bullish",
-                    "top": ob_candle["high"],
-                    "bottom": ob_candle["open"],
+                    "top": ob_candle["open"],
+                    "bottom": ob_candle["low"],
                     "timestamp": ob_candle["timestamp"],
                 })
             last_swing_high = None  # reset to prevent duplicate BOS signals
@@ -104,8 +104,8 @@ def detect(candles: list[dict]) -> list[dict]:
                     "ob_index": ob_candle["index"],
                     "bos_index": i,
                     "direction": "bearish",
-                    "top": ob_candle["open"],
-                    "bottom": ob_candle["low"],
+                    "top": ob_candle["high"],
+                    "bottom": ob_candle["open"],
                     "timestamp": ob_candle["timestamp"],
                 })
             last_swing_low = None

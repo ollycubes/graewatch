@@ -84,7 +84,7 @@ export const CHECKLIST_STEPS = [
     title: '15M · 15-Minute',
     subtitle: 'Entry trigger',
     interval: '15min',
-    overlays: { bos: true, fvg: true, gann: false, orderblocks: true, liquidity: true, wyckoff: true },
+    overlays: { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: true, wyckoff: true },
     items: [
       { key: 'm15_wyckoff', label: 'Look for Wyckoff structures forming inside the zone — not essential, but a strong bonus when present', required: false },
       { key: 'm15_sweep', label: 'Look for a liquidity sweep of local 15-minute highs or lows inside the zone', required: true },
@@ -125,19 +125,11 @@ export const initialState = {
   selection: null,
 };
 
-// Derive which overlays should be visible based on all completed & active steps
-function deriveOverlays(currentStep, completedSteps) {
-  const merged = { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false, wyckoff: false };
-  // Enable overlays from all completed steps AND the current active step
-  const relevantSteps = [...completedSteps, currentStep];
-  for (const stepId of relevantSteps) {
-    const stepDef = CHECKLIST_STEPS[stepId];
-    if (!stepDef) continue;
-    for (const [key, val] of Object.entries(stepDef.overlays)) {
-      if (val) merged[key] = true;
-    }
-  }
-  return merged;
+// Derive which overlays should be visible based on the current step only.
+function deriveOverlays(currentStep) {
+  const stepDef = CHECKLIST_STEPS[currentStep];
+  if (!stepDef) return { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false, wyckoff: false };
+  return { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false, wyckoff: false, ...stepDef.overlays };
 }
 
 // Derive the chart interval from the current step
@@ -202,7 +194,7 @@ export function dashboardReducer(state, action) {
 
       // Only derive overlays when a selection is active; otherwise keep them off.
       const newOverlays = state.selection
-        ? deriveOverlays(nextStep, newCompleted)
+        ? deriveOverlays(nextStep)
         : initialState.overlays;
       const newInterval = deriveInterval(nextStep, state.interval);
 
@@ -228,7 +220,7 @@ export function dashboardReducer(state, action) {
 
       // Only derive overlays when a selection is active; otherwise keep them off.
       const newOverlays = state.selection
-        ? deriveOverlays(targetStep, state.checklist.completedSteps)
+        ? deriveOverlays(targetStep)
         : initialState.overlays;
       const newInterval = deriveInterval(targetStep, state.interval);
 
@@ -262,10 +254,7 @@ export function dashboardReducer(state, action) {
     case 'SET_SELECTION': {
       // payload: { start: string, end: string }
       // When a selection is made, derive overlays for the current step so indicators show.
-      const selOverlays = deriveOverlays(
-        state.checklist.currentStep,
-        state.checklist.completedSteps,
-      );
+      const selOverlays = deriveOverlays(state.checklist.currentStep);
       return { ...state, selection: action.payload, overlays: selOverlays };
     }
 

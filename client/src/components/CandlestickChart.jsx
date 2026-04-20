@@ -160,7 +160,7 @@ function deriveGannFromBos(normalizedBosSignals, bias) {
     .filter((s) => s.start_timestamp != null);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange }) {
+function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange, toolbarExtras }) {
   const [error, setError] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
   const chartContainerRef = useRef(null);
@@ -887,6 +887,11 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             </button>
             <span className="chart-toolbar__label">Selection active</span>
           </>
+        )}
+        {toolbarExtras && (
+          <div className="chart-toolbar__extras">
+            {toolbarExtras}
+          </div>
         )}
       </div>
     </div>

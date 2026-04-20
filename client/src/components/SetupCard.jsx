@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(5) : '—';
@@ -13,29 +13,29 @@ function formatDate(ts) {
 }
 
 const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing', wyckoff: 'WY' };
+const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
+const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
+const BREAKDOWN_LABELS = {
+  type: 'Type', proximity: 'Prox', at_poi: 'POI',
+  liquidity: 'Liq', tf_confluence: 'TF', cluster: 'Conf',
+};
 
 function BiasBadge({ bias }) {
   const cls =
-    bias === 'bullish'
-      ? 'setup-card__bias--bullish'
-      : bias === 'bearish'
-        ? 'setup-card__bias--bearish'
-        : 'setup-card__bias--neutral';
+    bias === 'bullish' ? 'setup-card__bias--bullish'
+    : bias === 'bearish' ? 'setup-card__bias--bearish'
+    : 'setup-card__bias--neutral';
   const label =
     bias === 'bullish' ? '▲ Bullish' : bias === 'bearish' ? '▼ Bearish' : '— Neutral';
   return <span className={`setup-card__bias ${cls}`}>{label}</span>;
 }
 
-
-const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
-const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
-
-function BiasChain({ chain }) {
+function BiasChain({ chain, mod = '' }) {
   if (!chain || Object.keys(chain).length === 0) return null;
   const order = ['weekly', 'daily', '4h', '1h', '15min'];
   const entries = order.filter((tf) => chain[tf]);
   return (
-    <div className="bias-chain">
+    <div className={`bias-chain${mod ? ` ${mod}` : ''}`}>
       {entries.map((tf) => (
         <span key={tf} className={`bias-chain__item bias-chain__item--${chain[tf]}`}>
           {TF_SHORT[tf]} {BIAS_ARROW[chain[tf]] ?? chain[tf]}
@@ -45,20 +45,133 @@ function BiasChain({ chain }) {
   );
 }
 
+function ZoneRow({ zone, rank }) {
+  const bd = zone.score_breakdown || {};
+  const tfMatches = zone.tf_matches || [];
+  const breakdownItems = Object.entries(BREAKDOWN_LABELS)
+    .map(([key, label]) => ({ label, val: bd[key] }))
+    .filter((i) => i.val > 0);
+
+  return (
+    <div className="setup-overlay__zone">
+      <div className="setup-overlay__zone-header">
+        <span className="setup-overlay__zone-rank">#{rank}</span>
+        <span className="setup-overlay__zone-type">{TYPE_LABELS[zone.source_type] ?? zone.source_type}</span>
+        <span className="setup-overlay__zone-range">
+          {zone.bottom?.toFixed(5)} – {zone.top?.toFixed(5)}
+        </span>
+        <span className="setup-overlay__zone-score">{zone.score}</span>
+        {zone.cluster_size > 1 && (
+          <span className="setup-overlay__zone-confluence">×{zone.cluster_size}</span>
+        )}
+        {tfMatches.map((tf) => (
+          <span key={tf} className="setup-overlay__zone-tf">{TF_SHORT[tf] ?? tf}</span>
+        ))}
+      </div>
+      {breakdownItems.length > 0 && (
+        <div className="setup-overlay__zone-breakdown">
+          {breakdownItems.map((i) => (
+            <span key={i.label} className="setup-overlay__zone-bd-item">
+              {i.label} +{i.val}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBottom, entryTop, entryType, atPoi, onClose }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="setup-overlay__backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="setup-overlay" ref={ref} role="dialog" aria-modal="true">
+        <div className="setup-overlay__header">
+          <div className="setup-overlay__title">
+            <span className="setup-overlay__pair">{pair} · {interval.toUpperCase()}</span>
+            <span className="setup-overlay__subtitle">Setup Analysis</span>
+          </div>
+          <button className="setup-overlay__close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        {/* Bias */}
+        {biasChain && (
+          <div className="setup-overlay__section">
+            <h3 className="setup-overlay__section-title">Bias Chain</h3>
+            <BiasChain chain={biasChain} />
+          </div>
+        )}
+
+        {/* Levels */}
+        {setup?.valid && (
+          <div className="setup-overlay__section">
+            <h3 className="setup-overlay__section-title">Levels</h3>
+            <div className="setup-overlay__levels">
+              <div className={`setup-overlay__level${atPoi ? ' setup-overlay__level--poi' : ''}`}>
+                <span className="setup-overlay__level-label">ENTRY</span>
+                <span className="setup-overlay__level-value">{formatPrice(entryBottom)} – {formatPrice(entryTop)}</span>
+                {entryType && <span className="setup-card__tag">{TYPE_LABELS[entryType]}</span>}
+              </div>
+              <div className="setup-overlay__level">
+                <span className="setup-overlay__level-label">TARGET</span>
+                <span className="setup-overlay__level-value">{formatPrice(setup.target)}</span>
+                {setup.target_type && <span className="setup-card__tag">{TYPE_LABELS[setup.target_type]}</span>}
+              </div>
+              <div className="setup-overlay__level">
+                <span className="setup-overlay__level-label">STOP</span>
+                <span className="setup-overlay__level-value">{formatPrice(setup.stop)}</span>
+              </div>
+              <div className="setup-overlay__level setup-overlay__level--rr">
+                <span className="setup-overlay__level-label">R : R</span>
+                <span className="setup-overlay__level-value setup-overlay__rr-value">1 : {setup.risk_reward}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Zone Conviction */}
+        {zones.length > 0 && (
+          <div className="setup-overlay__section">
+            <h3 className="setup-overlay__section-title">
+              Confluence Zones <span className="setup-overlay__section-count">{zones.length} found</span>
+            </h3>
+            <div className="setup-overlay__zones">
+              {zones.map((z, i) => <ZoneRow key={i} zone={z} rank={i + 1} />)}
+            </div>
+          </div>
+        )}
+
+        {zones.length === 0 && !setup?.valid && (
+          <p className="setup-overlay__empty">No zones or setup found for this selection.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
   const [setup, setSetup] = useState(null);
-  const [topZone, setTopZone] = useState(null);
+  const [zones, setZones] = useState([]);
   const [biasChain, setBiasChain] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
   useEffect(() => {
     if (!selection) {
       setSetup(null);
-      setTopZone(null);
+      setZones([]);
       setBiasChain(null);
       setError('');
       setLoading(false);
+      setOverlayOpen(false);
       if (onSetup) onSetup(null);
       return;
     }
@@ -69,8 +182,6 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
       setLoading(true);
       setError('');
       const range = `&start=${encodeURIComponent(selection.start)}&end=${encodeURIComponent(selection.end)}`;
-      // We explicitly fetch the 15min setup to ensure the granular entry logic
-      // is displayed consistently across all higher timeframes.
       const base = `pair=${pair}&interval=15min${range}`;
 
       try {
@@ -89,7 +200,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
 
         if (zonesRes.status === 'fulfilled' && zonesRes.value.ok) {
           const data = await zonesRes.value.json();
-          setTopZone((data.zones || [])[0] ?? null);
+          setZones(data.zones || []);
           setBiasChain(data.bias_chain ?? null);
         }
       } catch (err) {
@@ -103,99 +214,121 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
     return () => ctrl.abort();
   }, [pair, interval, selection, onSetup]);
 
-  // Entry display: prefer #1 scored zone, fall back to setup's entry
+  const topZone = zones[0] ?? null;
   const entryTop = topZone ? topZone.top : setup?.entry_top;
   const entryBottom = topZone ? topZone.bottom : setup?.entry_bottom;
   const entryType = topZone ? topZone.source_type : setup?.entry_type;
-  const atPoi = topZone
-    ? topZone.score_breakdown?.at_poi > 0
-    : setup?.at_poi;
+  const atPoi = topZone ? topZone.score_breakdown?.at_poi > 0 : setup?.at_poi;
+
+  const hasDetail = setup || zones.length > 0 || biasChain;
 
   return (
-    <div className="setup-card">
-      {/* Left: pair + bias + bias chain */}
-      <div className="setup-card__meta">
-        <div className="setup-card__meta-top">
-          <span className="setup-card__pair">{pair} · {interval.toUpperCase()}</span>
-          {setup && <BiasBadge bias={setup.bias} />}
-          {!setup && !loading && !error && (
-            <span className="setup-card__hint">Draw a selection to analyse a setup</span>
-          )}
-          {loading && <span className="setup-card__hint">Analysing…</span>}
-          {error && <span className="setup-card__error">{error}</span>}
+    <>
+      <div
+        className={`setup-card${hasDetail ? ' setup-card--clickable' : ''}`}
+        onClick={hasDetail ? () => setOverlayOpen(true) : undefined}
+        role={hasDetail ? 'button' : undefined}
+        tabIndex={hasDetail ? 0 : undefined}
+        onKeyDown={hasDetail ? (e) => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true); } : undefined}
+      >
+        {/* Left: pair + bias + bias chain */}
+        <div className="setup-card__meta">
+          <div className="setup-card__meta-top">
+            <span className="setup-card__pair">{pair} · {interval.toUpperCase()}</span>
+            {setup && <BiasBadge bias={setup.bias} />}
+            {!setup && !loading && !error && (
+              <span className="setup-card__hint">Draw a selection to analyse a setup</span>
+            )}
+            {loading && <span className="setup-card__hint">Analysing…</span>}
+            {error && <span className="setup-card__error">{error}</span>}
+          </div>
+          {biasChain && <BiasChain chain={biasChain} />}
         </div>
-        {biasChain && <BiasChain chain={biasChain} />}
-      </div>
 
-      {/* Divider */}
-      {setup && setup.valid && <div className="setup-card__divider" />}
+        {setup && setup.valid && <div className="setup-card__divider" />}
 
-      {/* Centre: entry / target / stop */}
-      {setup && setup.valid && (
-        <div className="setup-card__levels">
-          <div className={`setup-card__level${atPoi ? ' setup-card__level--poi' : ''}`}>
-            <span className="setup-card__level-label">ENTRY</span>
-            <span className="setup-card__level-value">
-              {formatPrice(entryBottom)} – {formatPrice(entryTop)}
-            </span>
-            <div className="setup-card__level-tags">
-              {entryType && <span className="setup-card__tag">{TYPE_LABELS[entryType]}</span>}
-              {topZone?.score != null && (
-                <span className="setup-card__score">{topZone.score}</span>
+        {/* Centre: entry / target / stop */}
+        {setup && setup.valid && (
+          <div className="setup-card__levels">
+            <div className={`setup-card__level${atPoi ? ' setup-card__level--poi' : ''}`}>
+              <span className="setup-card__level-label">ENTRY</span>
+              <span className="setup-card__level-value">
+                {formatPrice(entryBottom)} – {formatPrice(entryTop)}
+              </span>
+              <div className="setup-card__level-tags">
+                {entryType && <span className="setup-card__tag">{TYPE_LABELS[entryType]}</span>}
+                {topZone?.score != null && (
+                  <span className="setup-card__score">{topZone.score}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="setup-card__level-sep" />
+
+            <div className="setup-card__level">
+              <span className="setup-card__level-label">TARGET</span>
+              <span className="setup-card__level-value">{formatPrice(setup.target)}</span>
+              {setup.target_type && (
+                <span className="setup-card__tag">{TYPE_LABELS[setup.target_type]}</span>
               )}
             </div>
+
+            <div className="setup-card__level-sep" />
+
+            <div className="setup-card__level">
+              <span className="setup-card__level-label">STOP</span>
+              <span className="setup-card__level-value">{formatPrice(setup.stop)}</span>
+            </div>
           </div>
+        )}
 
-          <div className="setup-card__level-sep" />
+        {setup && !setup.valid && (
+          <span className="setup-card__no-setup">No setup found at this timeframe</span>
+        )}
 
-          <div className="setup-card__level">
-            <span className="setup-card__level-label">TARGET</span>
-            <span className="setup-card__level-value">{formatPrice(setup.target)}</span>
-            {setup.target_type && (
-              <span className="setup-card__tag">{TYPE_LABELS[setup.target_type]}</span>
-            )}
+        {setup && setup.valid && <div className="setup-card__divider" />}
+
+        {setup && setup.valid && (
+          <div className="setup-card__rr">
+            <span className="setup-card__rr-label">R : R</span>
+            <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
           </div>
+        )}
 
-          <div className="setup-card__level-sep" />
-
-          <div className="setup-card__level">
-            <span className="setup-card__level-label">STOP</span>
-            <span className="setup-card__level-value">{formatPrice(setup.stop)}</span>
+        {/* Right: selection dates + clear */}
+        {selection && (
+          <div className="setup-card__selection" onClick={(e) => e.stopPropagation()}>
+            <span className="setup-card__selection-dates">
+              {formatDate(selection.start)} → {formatDate(selection.end)}
+            </span>
+            <button
+              className="setup-card__clear"
+              onClick={onClearSelection}
+              title="Clear selection"
+            >
+              ✕
+            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {setup && !setup.valid && (
-        <span className="setup-card__no-setup">No setup found at this timeframe</span>
-      )}
+        {hasDetail && <span className="setup-card__expand-hint">↗</span>}
+      </div>
 
-      {/* Divider */}
-      {setup && setup.valid && <div className="setup-card__divider" />}
-
-      {/* R:R */}
-      {setup && setup.valid && (
-        <div className="setup-card__rr">
-          <span className="setup-card__rr-label">R : R</span>
-          <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
-        </div>
+      {overlayOpen && (
+        <SetupDetailOverlay
+          pair={pair}
+          interval={interval}
+          setup={setup}
+          zones={zones}
+          biasChain={biasChain}
+          entryBottom={entryBottom}
+          entryTop={entryTop}
+          entryType={entryType}
+          atPoi={atPoi}
+          onClose={() => setOverlayOpen(false)}
+        />
       )}
-
-      {/* Right: selection dates + clear */}
-      {selection && (
-        <div className="setup-card__selection">
-          <span className="setup-card__selection-dates">
-            {formatDate(selection.start)} → {formatDate(selection.end)}
-          </span>
-          <button
-            className="setup-card__clear"
-            onClick={onClearSelection}
-            title="Clear selection"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
