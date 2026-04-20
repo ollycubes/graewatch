@@ -113,26 +113,26 @@ def test_sweep_below_low_price_is_swing_level():
     assert event["price"] == 0.990
 
 
-def test_no_sweep_when_close_above_swept_high():
-    """Wick above swing high but close also above — not a sweep."""
+def test_sweep_when_close_above_swept_high():
+    """Wick above swing high and close above — counts as taken/swept."""
     candles = flat_candles(20, price=1.000)
     candles[6] = make_candle(6, 1.000, 1.010, 1.000, 1.000)
-    # Close above the swing high — NOT a sweep
+    # Close above the swing high — now IS a sweep/mitigation
     candles[15] = make_candle(15, 1.009, 1.012, 1.007, 1.011)
     result = detect(candles)
     bearish = [e for e in result if e["direction"] == "bearish" and e.get("swept", False)]
-    assert bearish == []
+    assert len(bearish) == 1
 
 
-def test_no_sweep_when_close_below_swept_low():
-    """Wick below swing low but close also below — not a sweep."""
+def test_sweep_when_close_below_swept_low():
+    """Wick below swing low and close below — counts as taken/swept."""
     candles = flat_candles(20, price=1.000)
     candles[6] = make_candle(6, 1.000, 1.000, 0.990, 1.000)
-    # Close below the swing low — NOT a sweep
+    # Close below the swing low — now IS a sweep/mitigation
     candles[15] = make_candle(15, 0.991, 0.993, 0.987, 0.988)
     result = detect(candles)
     bullish = [e for e in result if e["direction"] == "bullish" and e.get("swept", False)]
-    assert bullish == []
+    assert len(bullish) == 1
 
 
 def test_swept_level_removed_after_sweep():

@@ -89,10 +89,10 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
             active_lows.append(swing_lows[low_idx])
             low_idx += 1
 
-        # Check for sweeps of active highs (wick above, close below)
+        # Check for sweeps of active highs (wick above)
         swept_high_indices = []
         for ah_i, ah in enumerate(active_highs):
-            if candle["high"] > ah["price"] and candle["close"] < ah["price"]:
+            if candle["high"] > ah["price"]:
                 events.append({
                     "source_timestamp": ah["timestamp"],
                     "timestamp": candle["timestamp"],
@@ -103,10 +103,10 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
                 })
                 swept_high_indices.append(ah_i)
 
-        # Check for sweeps of active lows (wick below, close above)
+        # Check for sweeps of active lows (wick below)
         swept_low_indices = []
         for al_i, al in enumerate(active_lows):
-            if candle["low"] < al["price"] and candle["close"] > al["price"]:
+            if candle["low"] < al["price"]:
                 events.append({
                     "source_timestamp": al["timestamp"],
                     "timestamp": candle["timestamp"],

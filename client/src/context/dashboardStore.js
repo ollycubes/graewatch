@@ -106,7 +106,7 @@ function buildInitialChecked() {
 
 export const initialState = {
   pair: 'EUR/USD',
-  interval: 'daily',
+  interval: 'weekly',
   overlays: {
     bos: false,
     fvg: false,
@@ -249,7 +249,7 @@ export function dashboardReducer(state, action) {
       // because the selection is the anchor for the entire top-down analysis.
       return {
         ...state,
-        interval: 'daily',
+        interval: 'weekly',
         overlays: initialState.overlays,
         selection: null,
         checklist: {
