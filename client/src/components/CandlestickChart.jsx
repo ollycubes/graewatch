@@ -160,7 +160,7 @@ function deriveGannFromBos(normalizedBosSignals, bias) {
     .filter((s) => s.start_timestamp != null);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange, toolbarExtras }) {
+function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange, toolbarExtras, onScreenshotRef }) {
   const [error, setError] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
   const chartContainerRef = useRef(null);
@@ -258,6 +258,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
 
     chartRef.current = chart;
     seriesRef.current = series;
+
+    if (onScreenshotRef) {
+      onScreenshotRef.current = () => chart.takeScreenshot().toDataURL('image/png');
+    }
 
     // Attach primitives
     const bosPrimitive = new BOSLinesPrimitive();

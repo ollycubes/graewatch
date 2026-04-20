@@ -25,6 +25,7 @@ class SnapshotPayload(BaseModel):
     stop: float | None = None
     risk_reward: float | None = None
     note: str | None = None
+    screenshot: str | None = None  # base64 PNG data URL
 
 
 @router.post("/api/snapshots", status_code=201)
@@ -53,7 +54,7 @@ async def list_snapshots(pair: str | None = None, limit: int = 50):
         "selection_start": 1, "selection_end": 1, "bias": 1,
         "entry_top": 1, "entry_bottom": 1, "entry_type": 1,
         "target": 1, "target_type": 1, "stop": 1, "risk_reward": 1,
-        "note": 1, "saved_at": 1,
+        "note": 1, "saved_at": 1, "screenshot": 1,
     }).sort("saved_at", -1).limit(limit)
 
     docs = await cursor.to_list(length=limit)

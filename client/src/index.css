@@ -1678,3 +1678,15 @@ body {
   color: var(--text-muted);
   font-style: italic;
 }
+
+.snapshot-card__screenshot {
+  width: 100%;
+  border-radius: 6px;
+  margin-top: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(150, 126, 118, 0.15);
+  transition: opacity 0.15s;
+}
+.snapshot-card__screenshot:hover {
+  opacity: 0.85;
+}

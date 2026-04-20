@@ -90,6 +90,16 @@ function SnapshotCard({ snap, onDelete }) {
       {snap.entry_top == null && (
         <div className="snapshot-card__no-setup">No valid setup at time of save</div>
       )}
+
+      {snap.screenshot && (
+        <img
+          className="snapshot-card__screenshot"
+          src={snap.screenshot}
+          alt="Chart snapshot"
+          onClick={() => window.open(snap.screenshot)}
+          title="Click to open full size"
+        />
+      )}
     </div>
   );
 }

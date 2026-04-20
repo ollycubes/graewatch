@@ -156,7 +156,7 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
   );
 }
 
-function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
+function SetupCard({ pair, interval, selection, onClearSelection, onSetup, screenshotRef }) {
   const [setup, setSetup] = useState(null);
   const [zones, setZones] = useState([]);
   const [biasChain, setBiasChain] = useState(null);
@@ -221,6 +221,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
     setSaving(true);
     setSaved(false);
     try {
+      const screenshot = screenshotRef?.current ? screenshotRef.current() : null;
       await fetch('/api/snapshots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -237,6 +238,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup }) {
           target_type: setup?.target_type ?? null,
           stop: setup?.stop ?? null,
           risk_reward: setup?.risk_reward ?? null,
+          screenshot: screenshot ?? null,
         }),
       });
       setSaved(true);
