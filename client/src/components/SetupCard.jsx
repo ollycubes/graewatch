@@ -15,6 +15,67 @@ function formatDate(ts) {
 const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing', wyckoff: 'WY' };
 const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
 const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
+
+// ── Confidence scoring ────────────────────────────────────────────────────────
+function computeConfidence(setup, zones, biasChain) {
+  let score = 0;
+
+  // Bias chain alignment (0–30): how many TFs agree on one direction
+  if (biasChain) {
+    const tfs = ['weekly', 'daily', '4h', '1h', '15min'];
+    const values = tfs.map(tf => biasChain[tf]).filter(Boolean);
+    if (values.length > 0) {
+      const counts = {};
+      for (const v of values) counts[v] = (counts[v] || 0) + 1;
+      const maxAligned = Math.max(...Object.values(counts));
+      score += Math.round((maxAligned / tfs.length) * 30);
+    }
+  }
+
+  // Zone quality (0–25): normalized top-zone conviction score
+  const topZone = zones[0];
+  if (topZone) {
+    score += Math.min(Math.round((topZone.score / 10) * 25), 25);
+  }
+
+  // Setup validity + R:R quality (0–25)
+  if (setup?.valid) {
+    let s = 8;
+    const rr = setup.risk_reward ?? 0;
+    if (rr >= 4) s += 17;
+    else if (rr >= 3) s += 12;
+    else if (rr >= 2) s += 8;
+    else if (rr >= 1.5) s += 4;
+    score += Math.min(s, 25);
+  }
+
+  // Structural factors (0–20): POI, liquidity, cluster
+  if (topZone?.score_breakdown?.at_poi > 0 || setup?.at_poi) score += 8;
+  if (topZone?.score_breakdown?.liquidity > 0) score += 6;
+  if ((topZone?.cluster_size ?? 1) > 1) score += 6;
+
+  return Math.min(Math.round(score), 100);
+}
+
+function confidenceMeta(score) {
+  if (score >= 76) return { label: 'High Conviction', color: '#3a9e7e' };
+  if (score >= 51) return { label: 'Strong',          color: '#5b8fd9' };
+  if (score >= 26) return { label: 'Moderate',        color: '#d4a054' };
+  return                  { label: 'Low',             color: '#c0533a' };
+}
+
+function ConfidencePill({ score }) {
+  const { label, color } = confidenceMeta(score);
+  return (
+    <div className="conf-pill">
+      <div className="conf-pill__track">
+        <div className="conf-pill__fill" style={{ width: `${score}%`, background: color }} />
+      </div>
+      <span className="conf-pill__score" style={{ color }}>{score}</span>
+      <span className="conf-pill__label" style={{ color }}>{label}</span>
+    </div>
+  );
+}
 const BREAKDOWN_LABELS = {
   type: 'Type', proximity: 'Prox', at_poi: 'POI',
   liquidity: 'Liq', tf_confluence: 'TF', cluster: 'Conf',
@@ -81,7 +142,7 @@ function ZoneRow({ zone, rank }) {
   );
 }
 
-function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBottom, entryTop, entryType, atPoi, onClose }) {
+function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBottom, entryTop, entryType, atPoi, confidence, onClose }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -144,6 +205,35 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
             </h3>
             <div className="setup-overlay__zones">
               {zones.map((z, i) => <ZoneRow key={i} zone={z} rank={i + 1} />)}
+            </div>
+          </div>
+        )}
+
+        {/* Confidence */}
+        {confidence !== null && (
+          <div className="setup-overlay__section">
+            <h3 className="setup-overlay__section-title">Confidence Indicator</h3>
+            <div className="conf-breakdown">
+              <div className="conf-breakdown__bar-row">
+                <div className="conf-breakdown__track">
+                  <div
+                    className="conf-breakdown__fill"
+                    style={{ width: `${confidence}%`, background: confidenceMeta(confidence).color }}
+                  />
+                </div>
+                <span className="conf-breakdown__score" style={{ color: confidenceMeta(confidence).color }}>
+                  {confidence} / 100
+                </span>
+              </div>
+              <span className="conf-breakdown__label" style={{ color: confidenceMeta(confidence).color }}>
+                {confidenceMeta(confidence).label}
+              </span>
+              <div className="conf-breakdown__factors">
+                <span className="conf-breakdown__factor">Bias alignment</span>
+                <span className="conf-breakdown__factor">Zone quality</span>
+                <span className="conf-breakdown__factor">Setup R:R</span>
+                <span className="conf-breakdown__factor">POI / Liq / Cluster</span>
+              </div>
             </div>
           </div>
         )}
@@ -259,6 +349,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
   const atPoi = topZone ? topZone.score_breakdown?.at_poi > 0 : setup?.at_poi;
 
   const hasDetail = setup || zones.length > 0 || biasChain;
+  const confidence = setup?.valid ? computeConfidence(setup, zones, biasChain) : null;
 
   return (
     <>
@@ -269,25 +360,47 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
         tabIndex={hasDetail ? 0 : undefined}
         onKeyDown={hasDetail ? (e) => { if (e.key === 'Enter' || e.key === ' ') setOverlayOpen(true); } : undefined}
       >
-        {/* Left: pair + bias + bias chain */}
-        <div className="setup-card__meta">
-          <div className="setup-card__meta-top">
+        {/* ── Row 1: header — always fully visible ── */}
+        <div className="setup-card__header">
+          <div className="setup-card__header-left">
             <span className="setup-card__pair">{pair} · {interval.toUpperCase()}</span>
             {setup && <BiasBadge bias={setup.bias} />}
+            {loading && <span className="setup-card__hint">Analysing…</span>}
+            {error && <span className="setup-card__error">{error}</span>}
             {!setup && !loading && !error && (
               <span className="setup-card__hint">Draw a selection to analyse a setup</span>
             )}
-            {loading && <span className="setup-card__hint">Analysing…</span>}
-            {error && <span className="setup-card__error">{error}</span>}
+            {biasChain && <BiasChain chain={biasChain} />}
           </div>
-          {biasChain && <BiasChain chain={biasChain} />}
+
+          {selection && (
+            <div className="setup-card__actions" onClick={(e) => e.stopPropagation()}>
+              <span className="setup-card__selection-dates">
+                {formatDate(selection.start)} → {formatDate(selection.end)}
+              </span>
+              <button
+                className={`setup-card__save${saved ? ' setup-card__save--done' : ''}`}
+                onClick={handleSave}
+                disabled={saving}
+                title="Save snapshot"
+              >
+                {saved ? '✓ Saved' : saving ? '…' : 'Save'}
+              </button>
+              <button
+                className="setup-card__clear"
+                onClick={onClearSelection}
+                title="Clear selection"
+              >
+                ✕
+              </button>
+              {hasDetail && <span className="setup-card__expand-hint">↗</span>}
+            </div>
+          )}
         </div>
 
-        {setup && setup.valid && <div className="setup-card__divider" />}
-
-        {/* Centre: entry / target / stop */}
+        {/* ── Row 2: levels — only when setup is valid ── */}
         {setup && setup.valid && (
-          <div className="setup-card__levels">
+          <div className="setup-card__body">
             <div className={`setup-card__level${atPoi ? ' setup-card__level--poi' : ''}`}>
               <span className="setup-card__level-label">ENTRY</span>
               <span className="setup-card__level-value">
@@ -317,47 +430,26 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
               <span className="setup-card__level-label">STOP</span>
               <span className="setup-card__level-value">{formatPrice(setup.stop)}</span>
             </div>
+
+            <div className="setup-card__level-sep" />
+
+            <div className="setup-card__level">
+              <span className="setup-card__level-label">R : R</span>
+              <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
+            </div>
+
+            {confidence !== null && (
+              <>
+                <div className="setup-card__level-sep" />
+                <ConfidencePill score={confidence} />
+              </>
+            )}
           </div>
         )}
 
         {setup && !setup.valid && (
-          <span className="setup-card__no-setup">No setup found at this timeframe</span>
+          <p className="setup-card__no-setup">No setup found at this timeframe</p>
         )}
-
-        {setup && setup.valid && <div className="setup-card__divider" />}
-
-        {setup && setup.valid && (
-          <div className="setup-card__rr">
-            <span className="setup-card__rr-label">R : R</span>
-            <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
-          </div>
-        )}
-
-        {/* Right: selection dates + save + clear */}
-        {selection && (
-          <div className="setup-card__selection" onClick={(e) => e.stopPropagation()}>
-            <span className="setup-card__selection-dates">
-              {formatDate(selection.start)} → {formatDate(selection.end)}
-            </span>
-            <button
-              className={`setup-card__save${saved ? ' setup-card__save--done' : ''}`}
-              onClick={handleSave}
-              disabled={saving}
-              title="Save snapshot"
-            >
-              {saved ? '✓ Saved' : saving ? '…' : 'Save'}
-            </button>
-            <button
-              className="setup-card__clear"
-              onClick={onClearSelection}
-              title="Clear selection"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {hasDetail && <span className="setup-card__expand-hint">↗</span>}
       </div>
 
       {overlayOpen && (
@@ -371,6 +463,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
           entryTop={entryTop}
           entryType={entryType}
           atPoi={atPoi}
+          confidence={confidence}
           onClose={() => setOverlayOpen(false)}
         />
       )}
