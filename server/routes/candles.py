@@ -5,7 +5,9 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 import httpx
 from datetime import datetime
 import os
+import time
 from pymongo import UpdateOne
+from utils.audit import log_api_failure, log_fallback, log_performance
 
 from routes.intervals import (
     SUPPORTED_INTERVALS,
@@ -56,6 +58,7 @@ async def get_candles(
             candles.reverse()
 
             # If the data is fresh we return cached candle data
+            await log_fallback(db, "candle_cache_hit", {"pair": pair, "interval": normalized_interval})
             return {
                 "source": "cache",
                 "count": len(candles),
@@ -82,6 +85,7 @@ async def get_candles(
 
     # Error handling if there's no response we send a 502
     if "values" not in data:
+        await log_api_failure(db, "twelvedata", "Missing 'values' in response", {"pair": pair, "response": data})
         raise HTTPException(status_code=502, detail={"error": "Failed to fetch data", "provider": data})
 
     # Parse and store in MongoDB

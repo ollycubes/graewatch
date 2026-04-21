@@ -1,9 +1,10 @@
 from __future__ import annotations
-
+import time
 from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
 from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
+from utils.audit import log_performance
 
 router = APIRouter()
 
@@ -88,7 +89,16 @@ async def get_analysis(
 
     # Run the algorithms on the FULL dataset
     detect_fn = COMPONENTS[component]
+    start_time = time.time()
     results = detect_fn(candles)
+    duration_ms = (time.time() - start_time) * 1000
+    
+    await log_performance(db, f"analysis_{component}", duration_ms, {
+        "pair": pair, 
+        "interval": normalized_interval,
+        "candle_count": len(candles),
+        "signal_count": len(results)
+    })
 
     # Filter the signals to only include those originating in the user's selection
     if is_ranged:

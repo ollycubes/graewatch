@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import time
+from fastapi import Request
+from utils.audit import log_performance, logger
 
 from routes.candles import router as candles_router
 from routes import candles as candles_module
@@ -29,6 +32,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def audit_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = (time.time() - start_time) * 1000
+    
+    # Log all API requests
+    if request.url.path.startswith("/api"):
+        await log_performance(
+            db, 
+            f"http_{request.method}", 
+            process_time, 
+            {"path": request.url.path, "status": response.status_code}
+        )
+    
+    return response
 
 # MongoDB connection
 mongo_client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
@@ -78,3 +98,7 @@ async def create_indexes():
         [("component", 1), ("pair", 1), ("interval", 1), ("candles_fetched_at", -1)],
     )
     await db["snapshots"].create_index([("saved_at", -1)])
+    
+    # TTL Index for audit logs: 30 days
+    await db["audit_logs"].create_index("timestamp", expireAfterSeconds=2592000)
+    logger.info("Startup complete: Indexes created.")

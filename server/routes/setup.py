@@ -1,10 +1,11 @@
 from __future__ import annotations
-
+import time
 from fastapi import APIRouter, Query, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
 from engine.setup import detect as detect_setup
 from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
+from utils.audit import log_performance
 
 router = APIRouter()
 
@@ -111,6 +112,7 @@ async def get_setup(
             htf_gann_signals = COMPONENTS["gann"](htf_candles)
 
     # ── Detect setup ─────────────────────────────────────────────────────────
+    start_time = time.time()
     result = detect_setup(
         candles=candles,
         bos_signals=bos_signals,
@@ -123,5 +125,13 @@ async def get_setup(
         htf_candles=htf_candles,
         htf_interval=htf_interval,
     )
+    duration_ms = (time.time() - start_time) * 1000
+    
+    await log_performance(db, "setup_detection", duration_ms, {
+        "pair": pair,
+        "interval": normalized_interval,
+        "valid": result.get("valid", False),
+        "bias": result.get("bias", "neutral")
+    })
 
     return {"pair": pair, "interval": normalized_interval, **result}
