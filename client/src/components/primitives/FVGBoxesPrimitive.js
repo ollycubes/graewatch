@@ -57,6 +57,7 @@ class FVGBoxesPaneView {
       const yBottom = series.priceToCoordinate(fvg.bottom);
 
       if (x1 === null || yTop === null || yBottom === null) continue;
+      if (x1 < 0) continue; // formation candle off-screen left — skip to avoid bleeding from chart edge
 
       // End at mitigation candle, or extend to visible edge if unmitigated
       let x2 = null;
@@ -72,10 +73,9 @@ class FVGBoxesPaneView {
         x2 = x1 + 200;
       }
 
-      const width = x2 - x1;
-      const height = yBottom - yTop;
+      if (x2 <= x1) continue;
 
-      boxes.push({ x: x1, y: yTop, width, height });
+      boxes.push({ x: x1, y: yTop, width: x2 - x1, height: yBottom - yTop });
     }
 
     return new FVGBoxesRenderer(boxes);

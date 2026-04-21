@@ -4,6 +4,13 @@ const BIAS_COLOR = { bullish: '#2ecc71', bearish: '#e74c3c', neutral: '#888' };
 const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
 const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing', confluence: 'Conf' };
 
+const OUTCOMES = [
+  { value: 'win',       label: 'Win',        color: '#2ecc71' },
+  { value: 'loss',      label: 'Loss',       color: '#e74c3c' },
+  { value: 'breakeven', label: 'B/E',        color: '#f39c12' },
+  { value: 'pending',   label: 'Pending',    color: '#888'    },
+];
+
 function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(5) : '—';
 }
@@ -23,9 +30,143 @@ function formatSavedAt(iso) {
     ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-function SnapshotCard({ snap, onDelete }) {
-  const [confirming, setConfirming] = useState(false);
-  const [imgOpen, setImgOpen] = useState(false);
+// ── Performance metrics from snapshot list ────────────────────────────────────
+function computeMetrics(snaps) {
+  const completed = snaps.filter(s => s.outcome && s.outcome !== 'pending');
+  const wins   = completed.filter(s => s.outcome === 'win');
+  const losses = completed.filter(s => s.outcome === 'loss');
+  const winRate = completed.length > 0 ? (wins.length / completed.length) * 100 : null;
+  const rrValues = completed.filter(s => s.risk_reward != null).map(s => s.risk_reward);
+  const avgRR = rrValues.length > 0 ? rrValues.reduce((a, b) => a + b, 0) / rrValues.length : null;
+  const totalR = wins.reduce((sum, s) => sum + (s.risk_reward ?? 1), 0) - losses.length;
+  return { total: snaps.length, completed: completed.length, wins: wins.length, losses: losses.length, winRate, avgRR, totalR };
+}
+
+// ── Demo capital simulation ───────────────────────────────────────────────────
+function simulateEquity(snaps, startingBalance, riskPct) {
+  const ordered = [...snaps]
+    .filter(s => s.outcome && s.outcome !== 'pending')
+    .sort((a, b) => new Date(a.saved_at) - new Date(b.saved_at));
+
+  let balance = startingBalance;
+  const curve = [{ label: 'Start', balance }];
+
+  for (const snap of ordered) {
+    const risk = balance * (riskPct / 100);
+    if (snap.outcome === 'win') {
+      balance += risk * (snap.risk_reward ?? 1);
+    } else if (snap.outcome === 'loss') {
+      balance -= risk;
+    }
+    curve.push({ label: formatDate(snap.saved_at), balance: Math.max(0, balance) });
+  }
+  return { finalBalance: balance, curve };
+}
+
+// ── Performance summary bar ───────────────────────────────────────────────────
+function PerformanceSummary({ snaps, startingBalance, riskPct, onBalanceChange, onRiskChange }) {
+  const m = computeMetrics(snaps);
+  const { finalBalance } = simulateEquity(snaps, startingBalance, riskPct);
+  const pnl = finalBalance - startingBalance;
+  const pnlPct = startingBalance > 0 ? (pnl / startingBalance) * 100 : 0;
+
+  return (
+    <div className="sim-summary">
+      <div className="sim-summary__metrics">
+        <div className="sim-summary__metric">
+          <span className="sim-summary__label">Trades</span>
+          <span className="sim-summary__value">{m.completed} / {m.total}</span>
+        </div>
+        <div className="sim-summary__metric">
+          <span className="sim-summary__label">Win Rate</span>
+          <span className="sim-summary__value" style={{ color: m.winRate >= 50 ? '#2ecc71' : m.winRate != null ? '#e74c3c' : undefined }}>
+            {m.winRate != null ? `${m.winRate.toFixed(0)}%` : '—'}
+          </span>
+        </div>
+        <div className="sim-summary__metric">
+          <span className="sim-summary__label">W / L</span>
+          <span className="sim-summary__value">{m.wins} / {m.losses}</span>
+        </div>
+        <div className="sim-summary__metric">
+          <span className="sim-summary__label">Avg R:R</span>
+          <span className="sim-summary__value">{m.avgRR != null ? `1 : ${m.avgRR.toFixed(1)}` : '—'}</span>
+        </div>
+        <div className="sim-summary__metric">
+          <span className="sim-summary__label">Total R</span>
+          <span className="sim-summary__value" style={{ color: m.totalR >= 0 ? '#2ecc71' : '#e74c3c' }}>
+            {m.completed > 0 ? (m.totalR >= 0 ? '+' : '') + m.totalR.toFixed(1) + 'R' : '—'}
+          </span>
+        </div>
+      </div>
+
+      <div className="sim-summary__divider" />
+
+      <div className="sim-summary__capital">
+        <span className="sim-summary__label">Demo Capital</span>
+        <div className="sim-summary__capital-inputs">
+          <div className="sim-summary__input-group">
+            <span className="sim-summary__input-prefix">$</span>
+            <input
+              className="sim-summary__input"
+              type="number"
+              min="100"
+              step="500"
+              value={startingBalance}
+              onChange={e => onBalanceChange(Number(e.target.value))}
+              title="Starting balance"
+            />
+          </div>
+          <div className="sim-summary__input-group">
+            <input
+              className="sim-summary__input sim-summary__input--sm"
+              type="number"
+              min="0.1"
+              max="10"
+              step="0.1"
+              value={riskPct}
+              onChange={e => onRiskChange(Number(e.target.value))}
+              title="Risk % per trade"
+            />
+            <span className="sim-summary__input-suffix">% risk</span>
+          </div>
+        </div>
+        <div className="sim-summary__equity">
+          <span className="sim-summary__equity-balance">${finalBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          <span className="sim-summary__equity-pnl" style={{ color: pnl >= 0 ? '#2ecc71' : '#e74c3c' }}>
+            {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%)
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Snapshot card ─────────────────────────────────────────────────────────────
+function SnapshotCard({ snap, onDelete, onUpdate }) {
+  const [confirming, setConfirming]   = useState(false);
+  const [imgOpen, setImgOpen]         = useState(false);
+  const [note, setNote]               = useState(snap.note ?? '');
+  const [editingNote, setEditingNote] = useState(false);
+
+  async function handleOutcome(value) {
+    const next = snap.outcome === value ? 'pending' : value;
+    await fetch(`/api/snapshots/${snap.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ outcome: next }),
+    });
+    onUpdate(snap.id, { outcome: next });
+  }
+
+  async function saveNote() {
+    await fetch(`/api/snapshots/${snap.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note }),
+    });
+    onUpdate(snap.id, { note });
+    setEditingNote(false);
+  }
 
   function handleDelete(e) {
     e.stopPropagation();
@@ -33,8 +174,11 @@ function SnapshotCard({ snap, onDelete }) {
     onDelete(snap.id);
   }
 
+  const outcome = snap.outcome ?? 'pending';
+  const outcomeColor = OUTCOMES.find(o => o.value === outcome)?.color ?? '#888';
+
   return (
-    <div className="snapshot-card">
+    <div className={`snapshot-card snapshot-card--${outcome}`}>
       <div className="snapshot-card__header">
         <span className="snapshot-card__pair">{snap.pair} · {snap.interval?.toUpperCase()}</span>
         {snap.bias && (
@@ -44,11 +188,7 @@ function SnapshotCard({ snap, onDelete }) {
         )}
         <span className="snapshot-card__saved-at">{formatSavedAt(snap.saved_at)}</span>
         {snap.screenshot && (
-          <button
-            className="snapshot-card__toggle-img"
-            onClick={() => setImgOpen((o) => !o)}
-            title={imgOpen ? 'Hide chart' : 'Show chart'}
-          >
+          <button className="snapshot-card__toggle-img" onClick={() => setImgOpen(o => !o)}>
             {imgOpen ? '▲ Chart' : '▼ Chart'}
           </button>
         )}
@@ -56,7 +196,7 @@ function SnapshotCard({ snap, onDelete }) {
           className={`snapshot-card__delete${confirming ? ' snapshot-card__delete--confirm' : ''}`}
           onClick={handleDelete}
           onBlur={() => setConfirming(false)}
-          title={confirming ? 'Click again to confirm' : 'Delete snapshot'}
+          title={confirming ? 'Click again to confirm' : 'Delete'}
         >
           {confirming ? 'Delete?' : '✕'}
         </button>
@@ -70,19 +210,13 @@ function SnapshotCard({ snap, onDelete }) {
         <div className="snapshot-card__levels">
           <div className="snapshot-card__level">
             <span className="snapshot-card__level-label">ENTRY</span>
-            <span className="snapshot-card__level-value">
-              {formatPrice(snap.entry_bottom)} – {formatPrice(snap.entry_top)}
-            </span>
-            {snap.entry_type && (
-              <span className="snapshot-card__tag">{TYPE_LABELS[snap.entry_type] ?? snap.entry_type}</span>
-            )}
+            <span className="snapshot-card__level-value">{formatPrice(snap.entry_bottom)} – {formatPrice(snap.entry_top)}</span>
+            {snap.entry_type && <span className="snapshot-card__tag">{TYPE_LABELS[snap.entry_type] ?? snap.entry_type}</span>}
           </div>
           <div className="snapshot-card__level">
             <span className="snapshot-card__level-label">TARGET</span>
             <span className="snapshot-card__level-value">{formatPrice(snap.target)}</span>
-            {snap.target_type && (
-              <span className="snapshot-card__tag">{TYPE_LABELS[snap.target_type] ?? snap.target_type}</span>
-            )}
+            {snap.target_type && <span className="snapshot-card__tag">{TYPE_LABELS[snap.target_type] ?? snap.target_type}</span>}
           </div>
           <div className="snapshot-card__level">
             <span className="snapshot-card__level-label">STOP</span>
@@ -101,20 +235,60 @@ function SnapshotCard({ snap, onDelete }) {
         <div className="snapshot-card__no-setup">No valid setup at time of save</div>
       )}
 
+      {/* Outcome buttons */}
+      <div className="snapshot-card__outcomes">
+        {OUTCOMES.filter(o => o.value !== 'pending').map(o => (
+          <button
+            key={o.value}
+            className={`snapshot-card__outcome-btn${outcome === o.value ? ' snapshot-card__outcome-btn--active' : ''}`}
+            style={outcome === o.value ? { borderColor: o.color, color: o.color } : {}}
+            onClick={() => handleOutcome(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+        {outcome !== 'pending' && (
+          <span className="snapshot-card__outcome-badge" style={{ color: outcomeColor }}>
+            {OUTCOMES.find(o => o.value === outcome)?.label}
+          </span>
+        )}
+      </div>
+
+      {/* Note */}
+      <div className="snapshot-card__note-row">
+        {editingNote ? (
+          <div className="snapshot-card__note-edit">
+            <input
+              className="snapshot-card__note-input"
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveNote(); if (e.key === 'Escape') setEditingNote(false); }}
+              placeholder="Add a note…"
+              autoFocus
+            />
+            <button className="snapshot-card__note-save" onClick={saveNote}>Save</button>
+            <button className="snapshot-card__note-cancel" onClick={() => setEditingNote(false)}>Cancel</button>
+          </div>
+        ) : (
+          <button className="snapshot-card__note-trigger" onClick={() => setEditingNote(true)}>
+            {note ? `📝 ${note}` : '+ Add note'}
+          </button>
+        )}
+      </div>
+
       {snap.screenshot && imgOpen && (
-        <img
-          className="snapshot-card__screenshot"
-          src={snap.screenshot}
-          alt="Chart snapshot"
-        />
+        <img className="snapshot-card__screenshot" src={snap.screenshot} alt="Chart snapshot" />
       )}
     </div>
   );
 }
 
+// ── Main panel ────────────────────────────────────────────────────────────────
 function SnapshotHistory({ pair }) {
-  const [snaps, setSnaps] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [snaps, setSnaps]               = useState([]);
+  const [loading, setLoading]           = useState(false);
+  const [startingBalance, setStartingBalance] = useState(10000);
+  const [riskPct, setRiskPct]           = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,15 +304,29 @@ function SnapshotHistory({ pair }) {
 
   async function handleDelete(id) {
     await fetch(`/api/snapshots/${id}`, { method: 'DELETE' });
-    setSnaps((prev) => prev.filter((s) => s.id !== id));
+    setSnaps(prev => prev.filter(s => s.id !== id));
+  }
+
+  function handleUpdate(id, changes) {
+    setSnaps(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
   }
 
   return (
     <div className="snapshot-history">
       <div className="snapshot-history__header">
-        <h3 className="snapshot-history__title">Saved Snapshots</h3>
+        <h3 className="snapshot-history__title">Simulation History</h3>
         <button className="snapshot-history__refresh" onClick={load} title="Refresh">↻</button>
       </div>
+
+      {snaps.length > 0 && (
+        <PerformanceSummary
+          snaps={snaps}
+          startingBalance={startingBalance}
+          riskPct={riskPct}
+          onBalanceChange={setStartingBalance}
+          onRiskChange={setRiskPct}
+        />
+      )}
 
       {loading && <p className="snapshot-history__empty">Loading…</p>}
 
@@ -150,8 +338,8 @@ function SnapshotHistory({ pair }) {
 
       {!loading && snaps.length > 0 && (
         <div className="snapshot-history__list">
-          {snaps.map((s) => (
-            <SnapshotCard key={s.id} snap={s} onDelete={handleDelete} />
+          {snaps.map(s => (
+            <SnapshotCard key={s.id} snap={s} onDelete={handleDelete} onUpdate={handleUpdate} />
           ))}
         </div>
       )}

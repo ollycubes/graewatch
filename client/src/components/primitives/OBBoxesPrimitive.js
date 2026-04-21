@@ -68,6 +68,7 @@ class OBBoxesPaneView {
       const yBottom = series.priceToCoordinate(ob.bottom);
 
       if (x1 === null || yTop === null || yBottom === null) continue;
+      if (x1 < 0) continue; // formation candle off-screen left — skip to avoid bleeding from chart edge
 
       // End at mitigation candle, or extend to visible edge if unmitigated
       let x2 = null;
@@ -83,12 +84,9 @@ class OBBoxesPaneView {
         x2 = x1 + 200;
       }
 
-      boxes.push({
-        x: x1,
-        y: yTop,
-        width: x2 - x1,
-        height: yBottom - yTop,
-      });
+      if (x2 <= x1) continue;
+
+      boxes.push({ x: x1, y: yTop, width: x2 - x1, height: yBottom - yTop });
     }
 
     return new OBBoxesRenderer(boxes);
