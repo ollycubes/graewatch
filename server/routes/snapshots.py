@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
+
+from utils.auth import get_current_user
 
 router = APIRouter()
 
@@ -29,12 +31,13 @@ class SnapshotPayload(BaseModel):
 
 
 @router.post("/api/snapshots", status_code=201)
-async def save_snapshot(payload: SnapshotPayload):
+async def save_snapshot(payload: SnapshotPayload, user: dict = Depends(get_current_user)):
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
 
     doc = {
         **payload.model_dump(),
+        "user_id": user["sub"],
         "saved_at": datetime.now(timezone.utc).isoformat(),
     }
     result = await db["snapshots"].insert_one(doc)
@@ -42,11 +45,11 @@ async def save_snapshot(payload: SnapshotPayload):
 
 
 @router.get("/api/snapshots")
-async def list_snapshots(pair: str | None = None, limit: int = 50):
+async def list_snapshots(pair: str | None = None, limit: int = 50, user: dict = Depends(get_current_user)):
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
 
-    filt: dict = {}
+    filt: dict = {"user_id": user["sub"]}
     if pair:
         filt["pair"] = pair
 
@@ -69,7 +72,7 @@ class SnapshotPatch(BaseModel):
 
 
 @router.patch("/api/snapshots/{snapshot_id}")
-async def update_snapshot(snapshot_id: str, payload: SnapshotPatch):
+async def update_snapshot(snapshot_id: str, payload: SnapshotPatch, user: dict = Depends(get_current_user)):
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
 
@@ -83,14 +86,17 @@ async def update_snapshot(snapshot_id: str, payload: SnapshotPatch):
     if not updates:
         raise HTTPException(status_code=422, detail="Nothing to update")
 
-    result = await db["snapshots"].update_one({"_id": oid}, {"$set": updates})
+    result = await db["snapshots"].update_one(
+        {"_id": oid, "user_id": user["sub"]},
+        {"$set": updates},
+    )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     return {"updated": True}
 
 
 @router.delete("/api/snapshots/{snapshot_id}")
-async def delete_snapshot(snapshot_id: str):
+async def delete_snapshot(snapshot_id: str, user: dict = Depends(get_current_user)):
     if db is None:
         raise HTTPException(status_code=500, detail="Database not initialized")
 
@@ -100,7 +106,7 @@ async def delete_snapshot(snapshot_id: str):
     except Exception:
         raise HTTPException(status_code=422, detail="Invalid snapshot id")
 
-    result = await db["snapshots"].delete_one({"_id": oid})
+    result = await db["snapshots"].delete_one({"_id": oid, "user_id": user["sub"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     return {"deleted": True}

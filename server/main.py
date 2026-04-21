@@ -22,13 +22,17 @@ from routes import confluence as confluence_module
 from routes.snapshots import router as snapshots_router
 from routes import snapshots as snapshots_module
 
+from routes.auth import router as auth_router
+from routes import auth as auth_module
+
 load_dotenv(dotenv_path="../.env")
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # Allows frontend (local:5173) to connect to backend (local:8000)
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -69,6 +73,9 @@ app.include_router(confluence_router)
 snapshots_module.db = db
 app.include_router(snapshots_router)
 
+auth_module.db = db
+app.include_router(auth_router)
+
 app.include_router(candles_router)
 
 
@@ -98,6 +105,8 @@ async def create_indexes():
         [("component", 1), ("pair", 1), ("interval", 1), ("candles_fetched_at", -1)],
     )
     await db["snapshots"].create_index([("saved_at", -1)])
+    await db["snapshots"].create_index([("user_id", 1), ("saved_at", -1)])
+    await db["users"].create_index("email", unique=True)
     
     # TTL Index for audit logs: 30 days
     await db["audit_logs"].create_index("timestamp", expireAfterSeconds=2592000)
