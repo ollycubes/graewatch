@@ -2,6 +2,9 @@
 // Dispatches TOGGLE_OVERLAY to context — CandlestickChart reacts to the
 // updated state and shows/hides the relevant primitive without re-fetching.
 import { useDashboard } from '../context/useDashboard';
+import content from '../content.json';
+
+const { overlays: OL } = content;
 
 function OverlayToggles() {
   const { state, dispatch } = useDashboard();
@@ -14,7 +17,7 @@ function OverlayToggles() {
           checked={state.overlays.bos}
           onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'bos' })}
         />
-        <span>BOS</span>
+        <span>{OL.bos}</span>
       </label>
 
       <label className="control control--toggle">
@@ -23,7 +26,7 @@ function OverlayToggles() {
           checked={state.overlays.fvg}
           onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'fvg' })}
         />
-        <span>FVG</span>
+        <span>{OL.fvg}</span>
       </label>
 
       <label className="control control--toggle">
@@ -32,7 +35,7 @@ function OverlayToggles() {
           checked={state.overlays.gann}
           onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'gann' })}
         />
-        <span>Gann</span>
+        <span>{OL.gann}</span>
       </label>
 
       <label className="control control--toggle">
@@ -41,7 +44,7 @@ function OverlayToggles() {
           checked={state.overlays.orderblocks}
           onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'orderblocks' })}
         />
-        <span>OB</span>
+        <span>{OL.ob}</span>
       </label>
 
       <label className="control control--toggle">
@@ -50,7 +53,7 @@ function OverlayToggles() {
           checked={state.overlays.liquidity}
           onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'liquidity' })}
         />
-        <span>Liq</span>
+        <span>{OL.liq}</span>
       </label>
 
       <label className="control control--toggle">
@@ -59,7 +62,7 @@ function OverlayToggles() {
           checked={state.overlays.wyckoff}
           onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: 'wyckoff' })}
         />
-        <span>Wyckoff</span>
+        <span>{OL.wyckoff}</span>
       </label>
     </>
   );

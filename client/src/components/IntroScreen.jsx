@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import content from '../content.json';
+
+const { intro } = content;
 
 // Each phase has an id and a timestamp (ms from mount) at which it becomes active.
 // The intro runs for 10 seconds total. Phases drive which scene is visible
@@ -265,19 +268,18 @@ function IntroScreen({ onFinish }) {
           The tagline is a nested conditional — it only renders at 'tagline' phase onward. */}
       {pastOrAt('title') && (
         <div className="intro__content">
-          <h1 className="intro__title">GRAEWATCH</h1>
+          <h1 className="intro__title">{intro.title}</h1>
           {pastOrAt('tagline') && (
             <>
-              {/* Thin horizontal rule between the title and tagline */}
               <div className="intro__divider" />
-              <p className="intro__tagline">Read the structure. Trade the intent.</p>
+              <p className="intro__tagline">{intro.tagline}</p>
             </>
           )}
         </div>
       )}
 
       {/* Persistent skip hint — fades in after 1.2s so it doesn't distract immediately */}
-      <p className="intro__skip">Click anywhere to skip</p>
+      <p className="intro__skip">{intro.skipHint}</p>
     </div>
   );
 }

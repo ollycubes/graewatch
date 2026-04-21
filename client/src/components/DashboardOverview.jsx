@@ -7,6 +7,9 @@ import OverlayToggles from './OverlayToggles';
 import SnapshotHistory from './SnapshotHistory';
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
+import content from '../content.json';
+
+const { app, nav, controls } = content;
 
 function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();
@@ -29,8 +32,8 @@ function DashboardOverview() {
     <section className="dashboard__panel">
       <header className="dashboard__top-bar">
         <div className="dashboard__branding">
-          <h1>Graewatch</h1>
-          <p>Top-down SMC analysis</p>
+          <h1>{app.title}</h1>
+          <p>{app.tagline}</p>
         </div>
 
         <nav className="dashboard__nav">
@@ -38,13 +41,13 @@ function DashboardOverview() {
             className={`dashboard__nav-tab${page === 'analysis' ? ' dashboard__nav-tab--active' : ''}`}
             onClick={() => setPage('analysis')}
           >
-            Analysis
+            {nav.analysis}
           </button>
           <button
             className={`dashboard__nav-tab${page === 'journal' ? ' dashboard__nav-tab--active' : ''}`}
             onClick={() => setPage('journal')}
           >
-            Simulation Journal
+            {nav.journal}
           </button>
         </nav>
 
@@ -57,7 +60,7 @@ function DashboardOverview() {
               <PairSelector />
 
               <label className="control">
-                <span>Interval</span>
+                <span>{controls.interval}</span>
                 <select
                   value={state.interval}
                   onChange={(e) => dispatch({ type: 'SET_INTERVAL', payload: e.target.value })}
@@ -73,7 +76,7 @@ function DashboardOverview() {
               <div className="dashboard__interval-hint">
                 {currentStepDef?.interval && (
                   <span className="interval-hint">
-                    <span className="icon">📊</span> Viewing: {currentStepDef.interval.toUpperCase()}
+                    <span className="icon">📊</span> {controls.viewing} {currentStepDef.interval.toUpperCase()}
                   </span>
                 )}
               </div>

@@ -1,15 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
+import content from '../content.json';
 
-const BIAS_COLOR = { bullish: '#2ecc71', bearish: '#e74c3c', neutral: '#888' };
-const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
-const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing', confluence: 'Conf' };
-
-const OUTCOMES = [
-  { value: 'win',       label: 'Win',        color: '#2ecc71' },
-  { value: 'loss',      label: 'Loss',       color: '#e74c3c' },
-  { value: 'breakeven', label: 'B/E',        color: '#f39c12' },
-  { value: 'pending',   label: 'Pending',    color: '#888'    },
-];
+const { journal: J, maps } = content;
+const BIAS_COLOR = maps.biasColor;
+const BIAS_ARROW = maps.biasArrow;
+const TYPE_LABELS = maps.typeLabels;
+const OUTCOMES = maps.outcomes;
 
 function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(5) : '—';
@@ -74,25 +70,25 @@ function PerformanceSummary({ snaps, startingBalance, riskPct, onBalanceChange, 
     <div className="sim-summary">
       <div className="sim-summary__metrics">
         <div className="sim-summary__metric">
-          <span className="sim-summary__label">Trades</span>
+          <span className="sim-summary__label">{J.metrics.trades}</span>
           <span className="sim-summary__value">{m.completed} / {m.total}</span>
         </div>
         <div className="sim-summary__metric">
-          <span className="sim-summary__label">Win Rate</span>
+          <span className="sim-summary__label">{J.metrics.winRate}</span>
           <span className="sim-summary__value" style={{ color: m.winRate >= 50 ? '#2ecc71' : m.winRate != null ? '#e74c3c' : undefined }}>
             {m.winRate != null ? `${m.winRate.toFixed(0)}%` : '—'}
           </span>
         </div>
         <div className="sim-summary__metric">
-          <span className="sim-summary__label">W / L</span>
+          <span className="sim-summary__label">{J.metrics.wl}</span>
           <span className="sim-summary__value">{m.wins} / {m.losses}</span>
         </div>
         <div className="sim-summary__metric">
-          <span className="sim-summary__label">Avg R:R</span>
+          <span className="sim-summary__label">{J.metrics.avgRR}</span>
           <span className="sim-summary__value">{m.avgRR != null ? `1 : ${m.avgRR.toFixed(1)}` : '—'}</span>
         </div>
         <div className="sim-summary__metric">
-          <span className="sim-summary__label">Total R</span>
+          <span className="sim-summary__label">{J.metrics.totalR}</span>
           <span className="sim-summary__value" style={{ color: m.totalR >= 0 ? '#2ecc71' : '#e74c3c' }}>
             {m.completed > 0 ? (m.totalR >= 0 ? '+' : '') + m.totalR.toFixed(1) + 'R' : '—'}
           </span>
@@ -102,7 +98,7 @@ function PerformanceSummary({ snaps, startingBalance, riskPct, onBalanceChange, 
       <div className="sim-summary__divider" />
 
       <div className="sim-summary__capital">
-        <span className="sim-summary__label">Demo Capital</span>
+        <span className="sim-summary__label">{J.metrics.demoCapital}</span>
         <div className="sim-summary__capital-inputs">
           <div className="sim-summary__input-group">
             <span className="sim-summary__input-prefix">$</span>
@@ -196,9 +192,9 @@ function SnapshotCard({ snap, onDelete, onUpdate }) {
           className={`snapshot-card__delete${confirming ? ' snapshot-card__delete--confirm' : ''}`}
           onClick={handleDelete}
           onBlur={() => setConfirming(false)}
-          title={confirming ? 'Click again to confirm' : 'Delete'}
+          title={confirming ? J.buttons.deleteConfirmTitle : J.buttons.deleteTitle}
         >
-          {confirming ? 'Delete?' : '✕'}
+          {confirming ? J.buttons.deleteConfirmLabel : J.buttons.deleteLabel}
         </button>
       </div>
 
@@ -209,30 +205,30 @@ function SnapshotCard({ snap, onDelete, onUpdate }) {
       {snap.entry_top != null && (
         <div className="snapshot-card__levels">
           <div className="snapshot-card__level">
-            <span className="snapshot-card__level-label">ENTRY</span>
+            <span className="snapshot-card__level-label">{J.levels.entry}</span>
             <span className="snapshot-card__level-value">{formatPrice(snap.entry_bottom)} – {formatPrice(snap.entry_top)}</span>
             {snap.entry_type && <span className="snapshot-card__tag">{TYPE_LABELS[snap.entry_type] ?? snap.entry_type}</span>}
           </div>
           <div className="snapshot-card__level">
-            <span className="snapshot-card__level-label">TARGET</span>
+            <span className="snapshot-card__level-label">{J.levels.target}</span>
             <span className="snapshot-card__level-value">{formatPrice(snap.target)}</span>
             {snap.target_type && <span className="snapshot-card__tag">{TYPE_LABELS[snap.target_type] ?? snap.target_type}</span>}
           </div>
           <div className="snapshot-card__level">
-            <span className="snapshot-card__level-label">STOP</span>
+            <span className="snapshot-card__level-label">{J.levels.stop}</span>
             <span className="snapshot-card__level-value">{formatPrice(snap.stop)}</span>
           </div>
           {snap.risk_reward != null && (
             <div className="snapshot-card__level">
-              <span className="snapshot-card__level-label">R:R</span>
-              <span className="snapshot-card__level-value">1 : {snap.risk_reward}</span>
+              <span className="snapshot-card__level-label">{J.levels.rr}</span>
+              <span className="snapshot-card__level-value">{J.levels.rrPrefix}{snap.risk_reward}</span>
             </div>
           )}
         </div>
       )}
 
       {snap.entry_top == null && (
-        <div className="snapshot-card__no-setup">No valid setup at time of save</div>
+        <div className="snapshot-card__no-setup">{J.noSetup}</div>
       )}
 
       {/* Outcome buttons */}
@@ -263,15 +259,15 @@ function SnapshotCard({ snap, onDelete, onUpdate }) {
               value={note}
               onChange={e => setNote(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveNote(); if (e.key === 'Escape') setEditingNote(false); }}
-              placeholder="Add a note…"
+              placeholder={J.notePlaceholder}
               autoFocus
             />
-            <button className="snapshot-card__note-save" onClick={saveNote}>Save</button>
-            <button className="snapshot-card__note-cancel" onClick={() => setEditingNote(false)}>Cancel</button>
+            <button className="snapshot-card__note-save" onClick={saveNote}>{J.buttons.save}</button>
+            <button className="snapshot-card__note-cancel" onClick={() => setEditingNote(false)}>{J.buttons.cancel}</button>
           </div>
         ) : (
           <button className="snapshot-card__note-trigger" onClick={() => setEditingNote(true)}>
-            {note ? `📝 ${note}` : '+ Add note'}
+            {note ? `📝 ${note}` : J.addNote}
           </button>
         )}
       </div>
@@ -314,8 +310,8 @@ function SnapshotHistory({ pair }) {
   return (
     <div className="snapshot-history">
       <div className="snapshot-history__header">
-        <h3 className="snapshot-history__title">Simulation History</h3>
-        <button className="snapshot-history__refresh" onClick={load} title="Refresh">↻</button>
+        <h3 className="snapshot-history__title">{J.title}</h3>
+        <button className="snapshot-history__refresh" onClick={load} title={J.title}>↻</button>
       </div>
 
       {snaps.length > 0 && (
@@ -328,12 +324,10 @@ function SnapshotHistory({ pair }) {
         />
       )}
 
-      {loading && <p className="snapshot-history__empty">Loading…</p>}
+      {loading && <p className="snapshot-history__empty">{J.loading}</p>}
 
       {!loading && snaps.length === 0 && (
-        <p className="snapshot-history__empty">
-          No snapshots yet. Make a selection and click <strong>Save</strong> to log it.
-        </p>
+        <p className="snapshot-history__empty">{J.empty}</p>
       )}
 
       {!loading && snaps.length > 0 && (

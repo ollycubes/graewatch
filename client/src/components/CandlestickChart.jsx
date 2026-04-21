@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import content from '../content.json';
+
+const { chart: CHART } = content;
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './primitives/BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './primitives/FVGBoxesPrimitive';
@@ -641,7 +644,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
         if (error?.name === 'AbortError') {
           return;
         }
-        setError('Failed to load chart data. Check that the server is running.');
+        setError(CHART.error);
       }
     }
 
@@ -865,6 +868,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   return (
     <div style={{ width: '100%' }}>
       {error && <p className="chart-error">{error}</p>}
+
       <div
         ref={chartContainerRef}
         className={isSelecting ? 'chart-container chart-container--selecting' : 'chart-container'}
@@ -874,20 +878,20 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
         <button
           className={`chart-toolbar__btn ${isSelecting ? 'chart-toolbar__btn--active' : ''}`}
           onClick={() => setIsSelecting(!isSelecting)}
-          title="Draw selection box"
+          title={CHART.selectTitle}
         >
-          ⬚ Select
+          {CHART.selectLabel}
         </button>
         {selection && (
           <>
             <button
               className="chart-toolbar__btn chart-toolbar__btn--clear"
               onClick={handleClearSelection}
-              title="Clear selection"
+              title={CHART.clearTitle}
             >
-              ✕ Clear
+              {CHART.clearLabel}
             </button>
-            <span className="chart-toolbar__label">Selection active</span>
+            <span className="chart-toolbar__label">{CHART.selectionActive}</span>
           </>
         )}
         {toolbarExtras && (

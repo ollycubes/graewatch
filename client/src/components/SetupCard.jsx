@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import content from '../content.json';
+
+const { setup: SC, maps } = content;
 
 function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(5) : '—';
@@ -12,9 +15,9 @@ function formatDate(ts) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 }
 
-const TYPE_LABELS = { ob: 'OB', fvg: 'FVG', swing: 'Swing', wyckoff: 'WY' };
-const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
-const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
+const TYPE_LABELS = maps.typeLabels;
+const TF_SHORT = maps.tfShort;
+const BIAS_ARROW = maps.biasArrow;
 
 // ── Confidence scoring ────────────────────────────────────────────────────────
 function computeConfidence(setup, zones, biasChain) {
@@ -58,10 +61,10 @@ function computeConfidence(setup, zones, biasChain) {
 }
 
 function confidenceMeta(score) {
-  if (score >= 76) return { label: 'High Conviction', color: '#3a9e7e' };
-  if (score >= 51) return { label: 'Strong',          color: '#5b8fd9' };
-  if (score >= 26) return { label: 'Moderate',        color: '#d4a054' };
-  return                  { label: 'Low',             color: '#c0533a' };
+  if (score >= 76) return { label: SC.confidence.high,     color: '#3a9e7e' };
+  if (score >= 51) return { label: SC.confidence.strong,   color: '#5b8fd9' };
+  if (score >= 26) return { label: SC.confidence.moderate, color: '#d4a054' };
+  return                  { label: SC.confidence.low,      color: '#c0533a' };
 }
 
 function ConfidencePill({ score }) {
@@ -76,10 +79,7 @@ function ConfidencePill({ score }) {
     </div>
   );
 }
-const BREAKDOWN_LABELS = {
-  type: 'Type', proximity: 'Prox', at_poi: 'POI',
-  liquidity: 'Liq', tf_confluence: 'TF', cluster: 'Conf',
-};
+const BREAKDOWN_LABELS = maps.breakdownLabels;
 
 function BiasBadge({ bias }) {
   const cls =
@@ -87,7 +87,7 @@ function BiasBadge({ bias }) {
     : bias === 'bearish' ? 'setup-card__bias--bearish'
     : 'setup-card__bias--neutral';
   const label =
-    bias === 'bullish' ? '▲ Bullish' : bias === 'bearish' ? '▼ Bearish' : '— Neutral';
+    maps.biasLabel[bias] ?? maps.biasLabel.neutral;
   return <span className={`setup-card__bias ${cls}`}>{label}</span>;
 }
 
@@ -157,7 +157,7 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
         <div className="setup-overlay__header">
           <div className="setup-overlay__title">
             <span className="setup-overlay__pair">{pair} · {interval.toUpperCase()}</span>
-            <span className="setup-overlay__subtitle">Setup Analysis</span>
+            <span className="setup-overlay__subtitle">{SC.subtitle}</span>
           </div>
           <button className="setup-overlay__close" onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -165,7 +165,7 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
         {/* Bias */}
         {biasChain && (
           <div className="setup-overlay__section">
-            <h3 className="setup-overlay__section-title">Bias Chain</h3>
+            <h3 className="setup-overlay__section-title">{SC.sections.biasChain}</h3>
             <BiasChain chain={biasChain} />
           </div>
         )}
@@ -173,25 +173,25 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
         {/* Levels */}
         {setup?.valid && (
           <div className="setup-overlay__section">
-            <h3 className="setup-overlay__section-title">Levels</h3>
+            <h3 className="setup-overlay__section-title">{SC.sections.levels}</h3>
             <div className="setup-overlay__levels">
               <div className={`setup-overlay__level${atPoi ? ' setup-overlay__level--poi' : ''}`}>
-                <span className="setup-overlay__level-label">ENTRY</span>
+                <span className="setup-overlay__level-label">{SC.levels.entry}</span>
                 <span className="setup-overlay__level-value">{formatPrice(entryBottom)} – {formatPrice(entryTop)}</span>
                 {entryType && <span className="setup-card__tag">{TYPE_LABELS[entryType]}</span>}
               </div>
               <div className="setup-overlay__level">
-                <span className="setup-overlay__level-label">TARGET</span>
+                <span className="setup-overlay__level-label">{SC.levels.target}</span>
                 <span className="setup-overlay__level-value">{formatPrice(setup.target)}</span>
                 {setup.target_type && <span className="setup-card__tag">{TYPE_LABELS[setup.target_type]}</span>}
               </div>
               <div className="setup-overlay__level">
-                <span className="setup-overlay__level-label">STOP</span>
+                <span className="setup-overlay__level-label">{SC.levels.stop}</span>
                 <span className="setup-overlay__level-value">{formatPrice(setup.stop)}</span>
               </div>
               <div className="setup-overlay__level setup-overlay__level--rr">
-                <span className="setup-overlay__level-label">R : R</span>
-                <span className="setup-overlay__level-value setup-overlay__rr-value">1 : {setup.risk_reward}</span>
+                <span className="setup-overlay__level-label">{SC.levels.rr}</span>
+                <span className="setup-overlay__level-value setup-overlay__rr-value">{SC.levels.rrPrefix}{setup.risk_reward}</span>
               </div>
             </div>
           </div>
@@ -201,7 +201,7 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
         {zones.length > 0 && (
           <div className="setup-overlay__section">
             <h3 className="setup-overlay__section-title">
-              Confluence Zones <span className="setup-overlay__section-count">{zones.length} found</span>
+              {SC.sections.confluenceZones} <span className="setup-overlay__section-count">{zones.length} {SC.sections.found}</span>
             </h3>
             <div className="setup-overlay__zones">
               {zones.map((z, i) => <ZoneRow key={i} zone={z} rank={i + 1} />)}
@@ -212,7 +212,7 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
         {/* Confidence */}
         {confidence !== null && (
           <div className="setup-overlay__section">
-            <h3 className="setup-overlay__section-title">Confidence Indicator</h3>
+            <h3 className="setup-overlay__section-title">{SC.sections.confidence}</h3>
             <div className="conf-breakdown">
               <div className="conf-breakdown__bar-row">
                 <div className="conf-breakdown__track">
@@ -222,24 +222,23 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
                   />
                 </div>
                 <span className="conf-breakdown__score" style={{ color: confidenceMeta(confidence).color }}>
-                  {confidence} / 100
+                  {confidence}{SC.confidence.scoreSuffix}
                 </span>
               </div>
               <span className="conf-breakdown__label" style={{ color: confidenceMeta(confidence).color }}>
                 {confidenceMeta(confidence).label}
               </span>
               <div className="conf-breakdown__factors">
-                <span className="conf-breakdown__factor">Bias alignment</span>
-                <span className="conf-breakdown__factor">Zone quality</span>
-                <span className="conf-breakdown__factor">Setup R:R</span>
-                <span className="conf-breakdown__factor">POI / Liq / Cluster</span>
+                {SC.confidence.factors.map((f) => (
+                  <span key={f} className="conf-breakdown__factor">{f}</span>
+                ))}
               </div>
             </div>
           </div>
         )}
 
         {zones.length === 0 && !setup?.valid && (
-          <p className="setup-overlay__empty">No zones or setup found for this selection.</p>
+          <p className="setup-overlay__empty">{SC.noZonesOrSetup}</p>
         )}
       </div>
     </div>
@@ -365,10 +364,10 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
           <div className="setup-card__header-left">
             <span className="setup-card__pair">{pair} · {interval.toUpperCase()}</span>
             {setup && <BiasBadge bias={setup.bias} />}
-            {loading && <span className="setup-card__hint">Analysing…</span>}
+            {loading && <span className="setup-card__hint">{SC.analysing}</span>}
             {error && <span className="setup-card__error">{error}</span>}
             {!setup && !loading && !error && (
-              <span className="setup-card__hint">Draw a selection to analyse a setup</span>
+              <span className="setup-card__hint">{SC.hint}</span>
             )}
             {biasChain && <BiasChain chain={biasChain} />}
           </div>
@@ -382,18 +381,18 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
                 className={`setup-card__save${saved ? ' setup-card__save--done' : ''}`}
                 onClick={handleSave}
                 disabled={saving}
-                title="Save snapshot"
+                title={SC.saveTitle}
               >
-                {saved ? '✓ Saved' : saving ? '…' : 'Save'}
+                {saved ? SC.savedLabel : saving ? SC.savingLabel : SC.saveLabel}
               </button>
               <button
                 className="setup-card__clear"
                 onClick={onClearSelection}
-                title="Clear selection"
+                title={SC.clearTitle}
               >
                 ✕
               </button>
-              {hasDetail && <span className="setup-card__expand-hint">↗</span>}
+              {hasDetail && <span className="setup-card__expand-hint">{SC.expandHint}</span>}
             </div>
           )}
         </div>
@@ -402,7 +401,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
         {setup && setup.valid && (
           <div className="setup-card__body">
             <div className={`setup-card__level${atPoi ? ' setup-card__level--poi' : ''}`}>
-              <span className="setup-card__level-label">ENTRY</span>
+              <span className="setup-card__level-label">{SC.levels.entry}</span>
               <span className="setup-card__level-value">
                 {formatPrice(entryBottom)} – {formatPrice(entryTop)}
               </span>
@@ -417,7 +416,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
             <div className="setup-card__level-sep" />
 
             <div className="setup-card__level">
-              <span className="setup-card__level-label">TARGET</span>
+              <span className="setup-card__level-label">{SC.levels.target}</span>
               <span className="setup-card__level-value">{formatPrice(setup.target)}</span>
               {setup.target_type && (
                 <span className="setup-card__tag">{TYPE_LABELS[setup.target_type]}</span>
@@ -427,15 +426,15 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
             <div className="setup-card__level-sep" />
 
             <div className="setup-card__level">
-              <span className="setup-card__level-label">STOP</span>
+              <span className="setup-card__level-label">{SC.levels.stop}</span>
               <span className="setup-card__level-value">{formatPrice(setup.stop)}</span>
             </div>
 
             <div className="setup-card__level-sep" />
 
             <div className="setup-card__level">
-              <span className="setup-card__level-label">R : R</span>
-              <span className="setup-card__rr-value">1 : {setup.risk_reward}</span>
+              <span className="setup-card__level-label">{SC.levels.rr}</span>
+              <span className="setup-card__rr-value">{SC.levels.rrPrefix}{setup.risk_reward}</span>
             </div>
 
             {confidence !== null && (
@@ -448,7 +447,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
         )}
 
         {setup && !setup.valid && (
-          <p className="setup-card__no-setup">No setup found at this timeframe</p>
+          <p className="setup-card__no-setup">{SC.noSetup}</p>
         )}
       </div>
 

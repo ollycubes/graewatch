@@ -1,0 +1,159 @@
+{
+  "app": {
+    "title": "Graewatch",
+    "tagline": "Top-down SMC analysis"
+  },
+  "intro": {
+    "title": "GRAEWATCH",
+    "tagline": "Read the structure. Trade the intent.",
+    "skipHint": "Click anywhere to skip"
+  },
+  "nav": {
+    "analysis": "Analysis",
+    "journal": "Simulation Journal"
+  },
+  "controls": {
+    "pair": "Pair",
+    "interval": "Interval",
+    "viewing": "Viewing:"
+  },
+  "checklist": {
+    "title": "SMC Checklist",
+    "resetLabel": "↺ Reset",
+    "resetTitle": "Reset checklist",
+    "noSelectionHint": "Draw a selection on the chart to begin your analysis",
+    "complete": "✓ Checklist Complete",
+    "next": "Next →"
+  },
+  "chart": {
+    "error": "Failed to load chart data. Check that the server is running.",
+    "selectLabel": "⬚ Select",
+    "selectTitle": "Draw selection box",
+    "clearLabel": "✕ Clear",
+    "clearTitle": "Clear selection",
+    "selectionActive": "Selection active"
+  },
+  "overlays": {
+    "bos": "BOS",
+    "fvg": "FVG",
+    "gann": "Gann",
+    "ob": "OB",
+    "liq": "Liq",
+    "wyckoff": "Wyckoff"
+  },
+  "setup": {
+    "analysing": "Analysing…",
+    "hint": "Draw a selection to analyse a setup",
+    "noSetup": "No setup found at this timeframe",
+    "noZonesOrSetup": "No zones or setup found for this selection.",
+    "subtitle": "Setup Analysis",
+    "saveLabel": "Save",
+    "savedLabel": "✓ Saved",
+    "savingLabel": "…",
+    "saveTitle": "Save snapshot",
+    "clearTitle": "Clear selection",
+    "expandHint": "↗",
+    "sections": {
+      "biasChain": "Bias Chain",
+      "levels": "Levels",
+      "confluenceZones": "Confluence Zones",
+      "found": "found",
+      "confidence": "Confidence Indicator"
+    },
+    "levels": {
+      "entry": "ENTRY",
+      "target": "TARGET",
+      "stop": "STOP",
+      "rr": "R : R",
+      "rrPrefix": "1 : "
+    },
+    "confidence": {
+      "high": "High Conviction",
+      "strong": "Strong",
+      "moderate": "Moderate",
+      "low": "Low",
+      "scoreSuffix": " / 100",
+      "factors": ["Bias alignment", "Zone quality", "Setup R:R", "POI / Liq / Cluster"]
+    }
+  },
+  "summary": {
+    "title": "Summary",
+    "stepPrefix": "Step",
+    "zoneConviction": "Zone Conviction",
+    "noZones": "No confluence zones found",
+    "error": "Signal summary unavailable right now.",
+    "preflightHint": "Complete pre-flight checks to begin analysis",
+    "sections": {
+      "bos": "BOS",
+      "fvg": "FVG",
+      "gann": "Gann",
+      "ob": "OB",
+      "liquidity": "Liquidity"
+    },
+    "empty": {
+      "bos": "No signals",
+      "fvg": "No zones",
+      "gann": "No boxes",
+      "ob": "No order blocks",
+      "liq": "No sweeps"
+    },
+    "signals": {
+      "bullish": "Bullish",
+      "bearish": "Bearish",
+      "breakAt": " break at",
+      "gapBetween": " gap between",
+      "box": " box",
+      "ob": " OB",
+      "sweepAt": " sweep at",
+      "on": " on ",
+      "mitigated": " (mitigated)",
+      "pool": " (pool)"
+    }
+  },
+  "journal": {
+    "title": "Simulation History",
+    "loading": "Loading…",
+    "empty": "No snapshots yet. Make a selection and click Save to log it.",
+    "noSetup": "No valid setup at time of save",
+    "notePlaceholder": "Add a note…",
+    "addNote": "+ Add note",
+    "metrics": {
+      "trades": "Trades",
+      "winRate": "Win Rate",
+      "wl": "W / L",
+      "avgRR": "Avg R:R",
+      "totalR": "Total R",
+      "demoCapital": "Demo Capital"
+    },
+    "levels": {
+      "entry": "ENTRY",
+      "target": "TARGET",
+      "stop": "STOP",
+      "rr": "R:R",
+      "rrPrefix": "1 : "
+    },
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteLabel": "✕",
+      "deleteTitle": "Delete",
+      "deleteConfirmTitle": "Click again to confirm",
+      "deleteConfirmLabel": "Delete?"
+    }
+  },
+  "maps": {
+    "typeLabels": { "ob": "OB", "fvg": "FVG", "swing": "Swing", "wyckoff": "WY", "confluence": "Conf" },
+    "tfShort": { "weekly": "W", "daily": "D", "4h": "4H", "1h": "1H", "15min": "15M", "gann": "G" },
+    "biasArrow": { "bullish": "▲", "bearish": "▼", "neutral": "—" },
+    "biasLabel": { "bullish": "▲ Bullish", "bearish": "▼ Bearish", "neutral": "— Neutral" },
+    "sourceLabel": { "ob": "OB", "fvg": "FVG", "wyckoff": "WY" },
+    "breakdownLabels": { "type": "Type", "proximity": "Prox", "at_poi": "POI", "liquidity": "Liq", "tf_confluence": "TF", "cluster": "Conf" },
+    "biasColor": { "bullish": "#2ecc71", "bearish": "#e74c3c", "neutral": "#888" },
+    "outcomes": [
+      { "value": "win",       "label": "Win",     "color": "#2ecc71" },
+      { "value": "loss",      "label": "Loss",    "color": "#e74c3c" },
+      { "value": "breakeven", "label": "B/E",     "color": "#f39c12" },
+      { "value": "pending",   "label": "Pending", "color": "#888"    }
+    ]
+  }
+}

@@ -4,6 +4,9 @@
 
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
+import content from '../content.json';
+
+const { checklist: CL } = content;
 
 function StepIcon({ status }) {
   if (status === 'completed') {
@@ -26,14 +29,14 @@ function ChecklistSidebar() {
   return (
     <aside className="checklist-sidebar" aria-label="SMC Checklist">
       <div className="checklist-sidebar__header">
-        <h2>SMC Checklist</h2>
+        <h2>{CL.title}</h2>
         <p className="checklist-sidebar__pair">{state.pair}</p>
         <button
           className="checklist-sidebar__reset"
           onClick={() => dispatch({ type: 'RESET_CHECKLIST' })}
-          title="Reset checklist"
+          title={CL.resetTitle}
         >
-          ↺ Reset
+          {CL.resetLabel}
         </button>
       </div>
 
@@ -41,7 +44,7 @@ function ChecklistSidebar() {
       {!hasSelection && (
         <div className="checklist-sidebar__no-selection">
           <span className="checklist-sidebar__no-selection-icon">⬚</span>
-          <p>Draw a selection on the chart to begin your analysis</p>
+          <p>{CL.noSelectionHint}</p>
         </div>
       )}
 
@@ -121,8 +124,8 @@ function ChecklistSidebar() {
         onClick={() => dispatch({ type: 'ADVANCE_STEP' })}
       >
         {currentStep >= CHECKLIST_STEPS.length - 1
-          ? '✓ Checklist Complete'
-          : `Next → ${CHECKLIST_STEPS[currentStep + 1]?.title || ''}`}
+          ? CL.complete
+          : `${CL.next} ${CHECKLIST_STEPS[currentStep + 1]?.title || ''}`}
       </button>
     </aside>
   );

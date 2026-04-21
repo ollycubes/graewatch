@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
+import content from '../content.json';
+
+const { summary: S, maps } = content;
 
 // Cap the list length so the sidebar doesn't grow unbounded on high-frequency intervals.
 const MAX_SIGNALS = 20;
@@ -19,9 +22,9 @@ function formatPrice(p) {
   return typeof p === 'number' ? p.toFixed(4) : String(p);
 }
 
-const SOURCE_LABEL = { ob: 'OB', fvg: 'FVG', wyckoff: 'WY' };
-const TF_SHORT = { weekly: 'W', daily: 'D', '4h': '4H', '1h': '1H', '15min': '15M', gann: 'G' };
-const BIAS_ARROW = { bullish: '▲', bearish: '▼', neutral: '—' };
+const SOURCE_LABEL = maps.sourceLabel;
+const TF_SHORT = maps.tfShort;
+const BIAS_ARROW = maps.biasArrow;
 
 function BiasChainBar({ chain }) {
   if (!chain) return null;
@@ -42,10 +45,10 @@ function ZoneConviction({ zones, biasChain }) {
   if ((!zones || zones.length === 0) && !biasChain) return null;
   return (
     <section className="summary-panel__section zone-conviction">
-      <h3>Zone Conviction {zones?.length > 0 && `(${zones.length})`}</h3>
+      <h3>{S.zoneConviction} {zones?.length > 0 && `(${zones.length})`}</h3>
       <BiasChainBar chain={biasChain} />
       {(!zones || zones.length === 0) ? (
-        <p className="summary-panel__count">No confluence zones found</p>
+        <p className="summary-panel__count">{S.noZones}</p>
       ) : (
         <ul className="summary-panel__list">
           {zones.map((z, i) => {
@@ -155,7 +158,7 @@ function SummaryPanel({ pair, interval, selection }) {
         }
       } catch (err) {
         if (err?.name !== 'AbortError') {
-          setError('Signal summary unavailable right now.');
+          setError(S.error);
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -181,9 +184,9 @@ function SummaryPanel({ pair, interval, selection }) {
   return (
     <aside className="summary-panel" aria-live="polite">
       <h2>
-        Summary
+        {S.title}
         <span className="summary-panel__step-tag">
-          Step {state.checklist.currentStep} · {currentStepDef?.title}
+          {S.stepPrefix} {state.checklist.currentStep} · {currentStepDef?.title}
         </span>
       </h2>
       <p className="summary-panel__meta">
@@ -198,15 +201,15 @@ function SummaryPanel({ pair, interval, selection }) {
           {selection && <ZoneConviction zones={zones} biasChain={biasChain} />}
           {overlays.bos && (
             <section className="summary-panel__section">
-              <h3>BOS ({summary.bos.length})</h3>
+              <h3>{S.sections.bos} ({summary.bos.length})</h3>
               {recentBos.length === 0 ? (
-                <p className="summary-panel__count">No signals</p>
+                <p className="summary-panel__count">{S.empty.bos}</p>
               ) : (
                 <ul className="summary-panel__list">
                   {recentBos.map((s, i) => (
                     <li key={i}>
-                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} break at{' '}
-                      {formatPrice(s.price)} on {formatDate(s.timestamp)}
+                      {s.direction === 'bullish' ? S.signals.bullish : S.signals.bearish}{S.signals.breakAt}{' '}
+                      {formatPrice(s.price)}{S.signals.on}{formatDate(s.timestamp)}
                     </li>
                   ))}
                 </ul>
@@ -216,14 +219,14 @@ function SummaryPanel({ pair, interval, selection }) {
 
           {overlays.fvg && (
             <section className="summary-panel__section">
-              <h3>FVG ({summary.fvg.length})</h3>
+              <h3>{S.sections.fvg} ({summary.fvg.length})</h3>
               {recentFvg.length === 0 ? (
-                <p className="summary-panel__count">No zones</p>
+                <p className="summary-panel__count">{S.empty.fvg}</p>
               ) : (
                 <ul className="summary-panel__list">
                   {recentFvg.map((s, i) => (
                     <li key={i}>
-                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} gap between{' '}
+                      {s.direction === 'bullish' ? S.signals.bullish : S.signals.bearish}{S.signals.gapBetween}{' '}
                       {formatPrice(s.bottom)}–{formatPrice(s.top)}
                     </li>
                   ))}
@@ -234,14 +237,14 @@ function SummaryPanel({ pair, interval, selection }) {
 
           {overlays.gann && (
             <section className="summary-panel__section">
-              <h3>Gann ({summary.gann.length})</h3>
+              <h3>{S.sections.gann} ({summary.gann.length})</h3>
               {recentGann.length === 0 ? (
-                <p className="summary-panel__count">No boxes</p>
+                <p className="summary-panel__count">{S.empty.gann}</p>
               ) : (
                 <ul className="summary-panel__list">
                   {recentGann.map((s, i) => (
                     <li key={i}>
-                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} box{' '}
+                      {s.direction === 'bullish' ? S.signals.bullish : S.signals.bearish}{S.signals.box}{' '}
                       {formatPrice(s.low_price)}–{formatPrice(s.high_price)}
                     </li>
                   ))}
@@ -252,16 +255,16 @@ function SummaryPanel({ pair, interval, selection }) {
 
           {overlays.orderblocks && (
             <section className="summary-panel__section">
-              <h3>OB ({summary.ob.length})</h3>
+              <h3>{S.sections.ob} ({summary.ob.length})</h3>
               {recentOB.length === 0 ? (
-                <p className="summary-panel__count">No order blocks</p>
+                <p className="summary-panel__count">{S.empty.ob}</p>
               ) : (
                 <ul className="summary-panel__list">
                   {recentOB.map((s, i) => (
                     <li key={i}>
-                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} OB{' '}
+                      {s.direction === 'bullish' ? S.signals.bullish : S.signals.bearish}{S.signals.ob}{' '}
                       {formatPrice(s.bottom)}–{formatPrice(s.top)}
-                      {s.end_timestamp ? ' (mitigated)' : ''}
+                      {s.end_timestamp ? S.signals.mitigated : ''}
                     </li>
                   ))}
                 </ul>
@@ -271,16 +274,16 @@ function SummaryPanel({ pair, interval, selection }) {
 
           {overlays.liquidity && (
             <section className="summary-panel__section">
-              <h3>Liquidity ({summary.liq.length})</h3>
+              <h3>{S.sections.liquidity} ({summary.liq.length})</h3>
               {recentLiq.length === 0 ? (
-                <p className="summary-panel__count">No sweeps</p>
+                <p className="summary-panel__count">{S.empty.liq}</p>
               ) : (
                 <ul className="summary-panel__list">
                   {recentLiq.map((s, i) => (
                     <li key={i}>
-                      {s.direction === 'bullish' ? 'Bullish' : 'Bearish'} sweep at{' '}
+                      {s.direction === 'bullish' ? S.signals.bullish : S.signals.bearish}{S.signals.sweepAt}{' '}
                       {formatPrice(s.price)}
-                      {s.pool ? ' (pool)' : ''}
+                      {s.pool ? S.signals.pool : ''}
                     </li>
                   ))}
                 </ul>
@@ -291,7 +294,7 @@ function SummaryPanel({ pair, interval, selection }) {
           {/* Show a hint when no overlays are active (e.g. Step 0) */}
           {!Object.values(overlays).some(Boolean) && (
             <p className="summary-panel__count" style={{ fontStyle: 'italic' }}>
-              Complete pre-flight checks to begin analysis
+              {S.preflightHint}
             </p>
           )}
         </>
