@@ -13,9 +13,6 @@ from routes import analysis as analysis_module
 from routes.setup import router as setup_router
 from routes import setup as setup_module
 
-from routes.zones import router as zones_router
-from routes import zones as zones_module
-
 from routes.confluence import router as confluence_router
 from routes import confluence as confluence_module
 
@@ -45,9 +42,6 @@ app.include_router(analysis_router)
 
 setup_module.db = db
 app.include_router(setup_router)
-
-zones_module.db = db
-app.include_router(zones_router)
 
 confluence_module.db = db
 app.include_router(confluence_router)

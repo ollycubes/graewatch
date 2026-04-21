@@ -27,11 +27,6 @@ from engine.zone_scoring import score_zone
 from engine.zone_types import Context, Zone
 
 
-def detect(_candles: list[dict]) -> list[dict]:
-    """Satisfies the COMPONENTS registry interface. Not used directly."""
-    return []
-
-
 def detect_zones(
     candles: list[dict],
     bos_signals: list[dict],
