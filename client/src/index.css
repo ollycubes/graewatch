@@ -95,6 +95,44 @@ body {
   color: var(--text-primary);
 }
 
+/* ── Page nav tabs ── */
+.dashboard__nav {
+  display: flex;
+  gap: 4px;
+  background: rgba(150, 126, 118, 0.1);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.dashboard__nav-tab {
+  padding: 6px 18px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.dashboard__nav-tab:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-primary);
+}
+
+.dashboard__nav-tab--active {
+  background: #ffffff;
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(150, 126, 118, 0.2);
+}
+
+/* ── Journal page ── */
+.dashboard__journal-page {
+  padding: 8px 0;
+}
+
 .dashboard__controls {
   display: flex;
   flex-wrap: wrap;
@@ -1520,7 +1558,7 @@ body {
 
 /* ── Snapshot History panel ────────────────────────────────────────────────── */
 .snapshot-history {
-  margin: 0 16px 24px;
+  margin: 0;
   border: 1px solid rgba(150, 126, 118, 0.25);
   border-radius: 14px;
   background: #faf8f7;
