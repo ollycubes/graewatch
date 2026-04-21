@@ -1,12 +1,9 @@
+from decimal import Decimal
+
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Break of Structure (BOS) events.
-    
-    A swing high is a candle whose high is higher than the N candles either side.
-    A swing low is a candle whose low is lower than the N candles either side.
-    
-    Bullish BOS: price closes above the most recent swing high.
-    Bearish BOS: price closes below the most recent swing low.
+    Prices are assumed to be decimal.Decimal objects.
     """
     N = 3  # lookback for swing detection
     swing_highs = []

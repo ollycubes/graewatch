@@ -1,27 +1,58 @@
 # Graewatch
 
-A forex market structure analysis dashboard built around Smart Money Concepts (SMC). It fetches historical candlestick data and runs detection algorithms to identify patterns like Break of Structure and Fair Value Gaps, then displays everything on an interactive chart.
+A forex market structure analysis dashboard built around Smart Money Concepts (SMC). Graewatch fetches historical candlestick data, runs eight detection algorithms to identify patterns like Break of Structure, Fair Value Gaps, Order Blocks, and Liquidity Sweeps, then scores confluence zones across multiple timeframes and presents actionable trade setups on an interactive chart.
 
 ## Project Structure
 
 ```
 graewatch/
-├── client/          # React frontend (Vite)
+├── client/                  # React frontend (Vite)
 │   └── src/
-│       ├── components/    # Chart, overlays, selectors, summary panel
-│       └── context/       # Dashboard state management
-├── server/          # Python backend (FastAPI)
-│   ├── routes/      # API endpoints (candles, analysis)
-│   └── engine/      # Detection algorithms (BOS, FVG, etc.)
-└── .env             # Environment variables (not committed)
+│       ├── components/
+│       │   ├── primitives/  # Custom chart overlays (BOS, FVG, OB, etc.)
+│       │   ├── CandlestickChart.jsx
+│       │   ├── ChecklistSidebar.jsx
+│       │   ├── DashboardOverview.jsx
+│       │   ├── IntroScreen.jsx
+│       │   ├── SetupCard.jsx
+│       │   ├── SnapshotHistory.jsx
+│       │   ├── SummaryPanel.jsx
+│       │   └── ...
+│       ├── context/         # Dashboard state management (useReducer)
+│       └── content.json     # Externalised UI strings
+├── server/                  # Python backend (FastAPI)
+│   ├── routes/              # API endpoints
+│   │   ├── candles.py       # OHLC data fetch & cache
+│   │   ├── analysis.py      # Single-engine analysis
+│   │   ├── setup.py         # Trade setup detection
+│   │   ├── confluence.py    # Multi-TF confluence scoring
+│   │   └── snapshots.py     # Snapshot CRUD
+│   ├── engine/              # Detection algorithms
+│   │   ├── bos.py           # Break of Structure
+│   │   ├── fvg.py           # Fair Value Gaps
+│   │   ├── orderblocks.py   # Order Blocks
+│   │   ├── liquidity.py     # Liquidity sweeps & pools
+│   │   ├── wyckoff.py       # Wyckoff phase detection
+│   │   ├── gann.py          # Gann boxes
+│   │   ├── confluence.py    # Multi-TF confluence engine
+│   │   ├── setup.py         # Entry/Target/Stop/R:R detection
+│   │   ├── zones.py         # Zone detection & scoring
+│   │   └── ...
+│   ├── utils/
+│   │   ├── precision.py     # Decimal ↔ float conversion
+│   │   └── audit.py         # Logging & performance tracking
+│   └── tests/               # Unit tests (pytest)
+└── .env                     # Environment variables (not committed)
 ```
 
 ## Tech Stack
 
-- **Frontend:** React 19, Vite, lightweight-charts (TradingView)
-- **Backend:** FastAPI, Motor (async MongoDB driver), HTTPX
-- **Database:** MongoDB
-- **Data Source:** TwelveData API
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, Vite, [lightweight-charts](https://github.com/nicedoc/lightweight-charts) (TradingView) |
+| Backend | FastAPI, Motor (async MongoDB driver), HTTPX |
+| Database | MongoDB |
+| Data Source | [TwelveData API](https://twelvedata.com/) |
 
 ## Getting Started
 
@@ -61,22 +92,125 @@ npm run dev
 
 The frontend runs on `http://localhost:5173` and proxies API requests to the backend on port 8000.
 
+### Running Tests
+
+```bash
+cd server
+source .venv/bin/activate
+python -m pytest -v
+```
+
+70 unit tests cover the core detection engines (BOS, FVG, Gann, Liquidity, Order Blocks).
+
 ## Features
 
-- **Candlestick charting** for EUR/USD and GBP/USD across 5 timeframes (15min, 1H, 4H, 1D, 1W)
-- **Break of Structure (BOS) detection** — identifies when price breaks past recent swing highs/lows
-- **Fair Value Gap (FVG) detection** — highlights imbalances in price action and tracks when they get filled
-- **Overlay toggles** — show/hide individual indicators on the chart
-- **Summary panel** — lists the most recent signals with prices and timestamps
-- **Caching** — candle data is cached in MongoDB for 1 hour to avoid unnecessary API calls, and analysis results are cached until the underlying data changes
+### Detection Engines
 
-## What's Next
+Eight algorithms identify SMC patterns from raw OHLC data:
 
-The engine is set up to support more analysis components. The following are stubbed out and ready to be implemented:
+| Engine | Description |
+|---|---|
+| **BOS** | Break of Structure — detects when price breaks past recent swing highs/lows |
+| **FVG** | Fair Value Gaps — highlights price imbalances and tracks when they get filled |
+| **Order Blocks** | Identifies institutional supply/demand zones from strong moves |
+| **Liquidity** | Detects liquidity sweeps (stop hunts) and equal-high/low pools |
+| **Wyckoff** | Phase detection — accumulation/distribution ranges |
+| **Gann** | Gann box overlays for time/price symmetry analysis |
+| **Confluence** | Multi-timeframe zone scoring — ranks zones by cross-TF overlap |
+| **Setup** | Derives Entry POI, Target, Stop Loss, and Risk:Reward from combined signals |
 
-- Order blocks
-- Liquidity sweeps
-- Supply/demand zones
-- Wyckoff phase detection
-- Gann boxes
-- Confluence scoring
+### Interactive Chart
+
+- Candlestick rendering via TradingView lightweight-charts
+- 9 custom chart primitives (BOS lines, FVG boxes, OB boxes, Gann boxes, Liquidity lines, Wyckoff markers, Setup levels, Confluence zones, Selection box)
+- Per-indicator overlay toggles
+- Selection tool — draw a time range to scope analysis
+
+### SMC Checklist
+
+A guided step-by-step workflow that walks through top-down analysis:
+1. Pre-flight — select pair and confirm data is loaded
+2. HTF Bias — check weekly/daily structure
+3. Intermediate Structure — confirm 4H/1H alignment
+4. Entry Timeframe — identify 15min confluence zones
+5. Setup Validation — review entry/target/stop geometry
+
+### Confidence Indicator
+
+A 0–100 score computed from four weighted factors:
+- Bias chain alignment across timeframes (0–30)
+- Zone quality / conviction score (0–25)
+- Setup validity and R:R quality (0–25)
+- Structural factors: POI proximity, liquidity, clustering (0–20)
+
+### Simulation Journal
+
+- Save trade setups as snapshots with chart screenshots
+- Tag outcomes (Win / Loss / Breakeven)
+- Track win rate, average R:R, total R
+- Demo capital simulator with configurable starting balance and risk %
+
+### Data & Caching
+
+- Candle data cached in MongoDB for 1 hour
+- Analysis results cached until underlying candle data changes
+- Ranged (selection-scoped) queries bypass cache for fresh results
+- Fallback to cached data when TwelveData is unavailable
+
+### Numerical Precision
+
+All detection engines use `decimal.Decimal` for calculations. A conversion boundary at the API layer transforms results back to standard floats for JSON serialisation, ensuring zero impact on the frontend.
+
+### Auditing
+
+- HTTP middleware logs every API request duration
+- Engine-level timing for algorithm performance
+- Events persisted to `audit_logs` collection with 30-day TTL
+
+## Architecture
+
+```
+TwelveData API
+     │
+     ▼
+┌─────────────────────────────────┐
+│  FastAPI Server                 │
+│                                 │
+│  routes/candles.py  ──► MongoDB │  (cache OHLC + normalise timestamps)
+│                         │       │
+│  routes/analysis.py ◄───┘       │  (fetch candles → Decimal → engine)
+│  routes/setup.py                │
+│  routes/confluence.py           │
+│                                 │
+│  engine/*.py                    │  (all math in Decimal)
+│         │                       │
+│         ▼                       │
+│  convert_to_float() ──► JSON    │  (API boundary)
+└─────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────┐
+│  React Dashboard                │
+│                                 │
+│  lightweight-charts             │
+│  + custom primitives            │
+│  + checklist state machine      │
+│  + confidence scoring           │
+└─────────────────────────────────┘
+```
+
+## API Reference
+
+See [API.md](API.md) for the complete endpoint reference.
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/candles` | GET | Fetch/cache OHLC data from TwelveData |
+| `/api/analysis/{component}` | GET | Run a detection engine |
+| `/api/setup` | GET | Detect trade setup (Entry/Target/Stop/R:R) |
+| `/api/confluence` | GET | Multi-TF confluence zone scoring |
+| `/api/snapshots` | GET | List saved snapshots |
+| `/api/snapshots` | POST | Save a new snapshot |
+| `/api/snapshots/{id}` | PATCH | Update snapshot outcome/notes |
+| `/api/snapshots/{id}` | DELETE | Delete a snapshot |
+| `/api/health` | GET | Health check |

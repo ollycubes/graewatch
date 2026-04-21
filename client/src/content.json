@@ -155,5 +155,45 @@
       { "value": "breakeven", "label": "B/E",     "color": "#f39c12" },
       { "value": "pending",   "label": "Pending", "color": "#888"    }
     ]
+  },
+  "tutorial": {
+    "stepLabel": "Step",
+    "ofLabel": "of",
+    "nextLabel": "Next →",
+    "backLabel": "← Back",
+    "skipLabel": "Skip",
+    "finishLabel": "Got it ✓",
+    "helpButton": "?",
+    "helpTitle": "Show tutorial",
+    "steps": [
+      {
+        "title": "Choose a Pair",
+        "body": "Select the currency pair you want to analyse. The chart and all indicators will update to show data for this pair."
+      },
+      {
+        "title": "Timeframe",
+        "body": "Pick a timeframe for the chart. The SMC checklist will auto-switch timeframes as you progress, but you can override it here."
+      },
+      {
+        "title": "Your Chart",
+        "body": "This is your interactive candlestick chart. Scroll to zoom, drag to pan. All indicators and analysis overlays are drawn directly on the chart."
+      },
+      {
+        "title": "Selection Tool",
+        "body": "Click Select, then drag on the chart to highlight a time range. This triggers the analysis engine to detect setups within your selection."
+      },
+      {
+        "title": "SMC Checklist",
+        "body": "Work through each step of the top-down analysis. Tick off items as you confirm them on the chart, then advance to the next step."
+      },
+      {
+        "title": "Setup Card",
+        "body": "Once you have a selection, the system calculates Entry, Target, Stop, and Risk:Reward. Click the card to see a detailed breakdown with confluence zones and confidence score."
+      },
+      {
+        "title": "Simulation Journal",
+        "body": "Save your setups here and track your win/loss record over time. You can also simulate portfolio growth with configurable risk settings."
+      }
+    ]
   }
 }

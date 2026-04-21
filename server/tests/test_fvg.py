@@ -13,6 +13,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.fvg import detect
+from utils.precision import convert_to_float
 from tests.conftest import make_candle, flat_candles
 
 
@@ -57,21 +58,21 @@ def bearish_fvg_candles() -> list[dict]:
 
 
 def test_empty_candles_returns_empty():
-    assert detect([]) == []
+    assert convert_to_float(detect([])) == []
 
 
 def test_too_few_candles_returns_empty():
-    assert detect(flat_candles(2)) == []
+    assert convert_to_float(detect(flat_candles(2))) == []
 
 
 def test_bullish_fvg_detected():
-    result = detect(bullish_fvg_candles())
+    result = convert_to_float(detect(bullish_fvg_candles()))
     bullish = [e for e in result if e["direction"] == "bullish"]
     assert len(bullish) == 1
 
 
 def test_bullish_fvg_zone_values():
-    result = detect(bullish_fvg_candles())
+    result = convert_to_float(detect(bullish_fvg_candles()))
     fvg = next(e for e in result if e["direction"] == "bullish")
     # top = c2.low = 1.005, bottom = c0.high = 1.000
     assert fvg["top"] == 1.005
@@ -79,19 +80,19 @@ def test_bullish_fvg_zone_values():
 
 
 def test_bullish_fvg_timestamp_is_impulse_candle():
-    result = detect(bullish_fvg_candles())
+    result = convert_to_float(detect(bullish_fvg_candles()))
     fvg = next(e for e in result if e["direction"] == "bullish")
     assert fvg["timestamp"] == 1  # c1 (the middle/impulse candle)
 
 
 def test_bearish_fvg_detected():
-    result = detect(bearish_fvg_candles())
+    result = convert_to_float(detect(bearish_fvg_candles()))
     bearish = [e for e in result if e["direction"] == "bearish"]
     assert len(bearish) == 1
 
 
 def test_bearish_fvg_zone_values():
-    result = detect(bearish_fvg_candles())
+    result = convert_to_float(detect(bearish_fvg_candles()))
     fvg = next(e for e in result if e["direction"] == "bearish")
     # top = c0.low = 1.010, bottom = c2.high = 1.005
     assert fvg["top"] == 1.010
@@ -99,18 +100,18 @@ def test_bearish_fvg_zone_values():
 
 
 def test_bearish_fvg_timestamp_is_impulse_candle():
-    result = detect(bearish_fvg_candles())
+    result = convert_to_float(detect(bearish_fvg_candles()))
     fvg = next(e for e in result if e["direction"] == "bearish")
     assert fvg["timestamp"] == 1
 
 
 def test_flat_candles_produce_no_fvg():
     # No gap in perfectly flat data
-    assert detect(flat_candles(10)) == []
+    assert convert_to_float(detect(flat_candles(10))) == []
 
 
 def test_fvg_event_fields():
-    for fvg in detect(bullish_fvg_candles()):
+    for fvg in convert_to_float(detect(bullish_fvg_candles())):
         for key in ("timestamp", "end_timestamp", "direction", "top", "bottom"):
             assert key in fvg, f"Missing key '{key}' in FVG event"
 
@@ -123,14 +124,14 @@ def test_bullish_fvg_mitigated_when_price_enters_gap():
     candles = bullish_fvg_candles()
     # Candle 3 dips into the gap
     candles[3] = make_candle(3, 1.008, 1.009, 1.004, 1.006)
-    result = detect(candles)
+    result = convert_to_float(convert_to_float(detect(candles)))
     fvg = next(e for e in result if e["direction"] == "bullish")
     assert fvg["end_timestamp"] == 3  # mitigated at candle 3
 
 
 def test_bullish_fvg_unmitigated_when_price_stays_above():
     """If no later candle dips into the gap, end_timestamp should be None."""
-    result = detect(bullish_fvg_candles())
+    result = convert_to_float(detect(bullish_fvg_candles()))
     fvg = next(e for e in result if e["direction"] == "bullish")
     assert fvg["end_timestamp"] is None
 
@@ -139,6 +140,6 @@ def test_bearish_fvg_mitigated_when_price_enters_gap():
     candles = bearish_fvg_candles()
     # Candle 3 bounces up into the gap (high >= 1.005)
     candles[3] = make_candle(3, 1.003, 1.006, 1.002, 1.005)
-    result = detect(candles)
+    result = convert_to_float(convert_to_float(detect(candles)))
     fvg = next(e for e in result if e["direction"] == "bearish")
     assert fvg["end_timestamp"] == 3

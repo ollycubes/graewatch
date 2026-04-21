@@ -1,4 +1,5 @@
 from __future__ import annotations
+from decimal import Decimal
 
 # ── Tuning constants ──────────────────────────────────────────────────────────
 
@@ -6,10 +7,10 @@ from __future__ import annotations
 MIN_RANGE_CANDLES = 12
 
 # Range height must be ≤ this multiple of ATR(14) to count as consolidation
-RANGE_ATR_MULT = 2.5
+RANGE_ATR_MULT = Decimal("2.5")
 
 # Allow slight expansion when extending a confirmed range
-EXTEND_ATR_MULT = 3.5
+EXTEND_ATR_MULT = Decimal("3.5")
 
 # Candles after the range ends to scan for a spring / upthrust
 LOOKAHEAD = 25
@@ -21,28 +22,7 @@ TREND_LOOKBACK = 15
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Wyckoff Springs and Upthrusts from consolidation ranges.
-
-    A trading range is a sequence of candles where price oscillates within
-    ≤ RANGE_ATR_MULT × ATR(14).  At the range's conclusion:
-
-        Spring   — wick below range support, close back inside → bullish
-        Upthrust — wick above range resistance, close back inside → bearish
-
-    The Wyckoff *phase* is determined by the trend that preceded the range:
-        accumulation  — price was falling into the range (smart money buying)
-        distribution  — price was rising into the range (smart money selling)
-        unknown       — insufficient pre-range context
-
-    Each returned signal contains:
-        timestamp         str    — candle that formed the spring / upthrust
-        type              str    — "spring" | "upthrust"
-        direction         str    — "bullish" | "bearish" (expected move)
-        level             float  — the support or resistance level swept
-        range_start       str    — timestamp when the trading range began
-        range_end         str    — timestamp of the last candle inside the range
-        range_support     float  — lower boundary of the range
-        range_resistance  float  — upper boundary of the range
-        phase             str    — "accumulation" | "distribution" | "unknown"
+    Prices are assumed to be decimal.Decimal objects.
     """
     if len(candles) < MIN_RANGE_CANDLES + LOOKAHEAD:
         return []
@@ -58,10 +38,9 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 
-def _detect_ranges(candles: list[dict], atr: float) -> list[dict]:
+def _detect_ranges(candles: list[dict], atr: Decimal) -> list[dict]:
     """
     Greedy left-to-right scan for consolidation ranges.
-    When a valid range is found the scan jumps past it, preventing overlap.
     """
     max_initial = RANGE_ATR_MULT * atr
     max_extended = EXTEND_ATR_MULT * atr
@@ -78,7 +57,7 @@ def _detect_ranges(candles: list[dict], atr: float) -> list[dict]:
             i += 1
             continue
 
-        # Valid seed — extend as far as possible while height stays bounded
+        # Valid seed — extend as far as possible
         resistance = max(highs)
         support = min(lows)
         end_idx = i + MIN_RANGE_CANDLES
@@ -97,28 +76,28 @@ def _detect_ranges(candles: list[dict], atr: float) -> list[dict]:
             i += 1
             continue
 
-        # Phase: what was price doing before it entered this range?
+        # Phase determination
         phase = "unknown"
         if i >= TREND_LOOKBACK:
             pre_close = candles[i - TREND_LOOKBACK]["close"]
             entry_close = candles[i]["close"]
             delta = entry_close - pre_close
-            if delta < -atr * 0.5:
-                phase = "accumulation"   # price falling into range
-            elif delta > atr * 0.5:
-                phase = "distribution"   # price rising into range
+            if delta < -atr * Decimal("0.5"):
+                phase = "accumulation"
+            elif delta > atr * Decimal("0.5"):
+                phase = "distribution"
 
         ranges.append({
             "start_index": i,
             "end_index": end_idx,
             "start_timestamp": candles[i]["timestamp"],
             "end_timestamp": candles[end_idx - 1]["timestamp"],
-            "support": round(support, 5),
-            "resistance": round(resistance, 5),
+            "support": support,
+            "resistance": resistance,
             "phase": phase,
         })
 
-        i = end_idx  # skip past this range
+        i = end_idx
 
     return ranges
 
@@ -126,7 +105,6 @@ def _detect_ranges(candles: list[dict], atr: float) -> list[dict]:
 def _detect_events(candles: list[dict], ranges: list[dict]) -> list[dict]:
     """
     Look ahead after each range for a Spring or Upthrust.
-    Records at most one event per range (whichever appears first).
     """
     signals: list[dict] = []
 
@@ -137,7 +115,7 @@ def _detect_events(candles: list[dict], ranges: list[dict]) -> list[dict]:
         for j in range(look_start, look_end):
             c = candles[j]
 
-            # Spring: wick below support, close back inside → bullish entry
+            # Spring
             if c["low"] < r["support"] and c["close"] > r["support"]:
                 signals.append({
                     "timestamp": c["timestamp"],
@@ -152,7 +130,7 @@ def _detect_events(candles: list[dict], ranges: list[dict]) -> list[dict]:
                 })
                 break
 
-            # Upthrust: wick above resistance, close back inside → bearish entry
+            # Upthrust
             if c["high"] > r["resistance"] and c["close"] < r["resistance"]:
                 signals.append({
                     "timestamp": c["timestamp"],
@@ -170,15 +148,15 @@ def _detect_events(candles: list[dict], ranges: list[dict]) -> list[dict]:
     return signals
 
 
-def _compute_atr(candles: list[dict], period: int = 14) -> float:
-    """14-period Average True Range."""
+def _compute_atr(candles: list[dict], period: int = 14) -> Decimal:
+    """14-period Average True Range using Decimal."""
     if len(candles) < 2:
-        return 0.0
+        return Decimal("0.0")
     true_ranges = []
     for i in range(1, len(candles)):
-        h = candles[i]["high"]
-        l = candles[i]["low"]
-        pc = candles[i - 1]["close"]
+        h = Decimal(str(candles[i]["high"]))
+        l = Decimal(str(candles[i]["low"]))
+        pc = Decimal(str(candles[i - 1]["close"]))
         true_ranges.append(max(h - l, abs(h - pc), abs(l - pc)))
     recent = true_ranges[-period:]
-    return sum(recent) / len(recent) if recent else 0.0
+    return sum(recent) / Decimal(str(len(recent))) if recent else Decimal("0.0")

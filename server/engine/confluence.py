@@ -1,23 +1,5 @@
-"""
-Multi-timeframe zone confluence engine.
-
-Scores current-TF zones by how many higher timeframes have overlapping
-zones in the same direction.  Each TF only contributes the signals that
-your SMC checklist requires at that level:
-
-  Weekly  → FVG magnets + OBs (macro anchors)
-  Daily   → BOS bias + OBs near liquidity (primary POI)
-  4H      → Gann premium/discount + FVG/OB inside Gann zone
-  1H      → FVG/OB price-entry confirmation
-  15M     → Wyckoff + liquidity sweep (entry trigger)
-
-A zone on the current TF that sits inside a Daily OB, inside a 4H FVG,
-and inside the Gann discount zone will score far higher than a lone 15M
-signal with no higher-TF backing.
-"""
-
 from __future__ import annotations
-
+from decimal import Decimal
 from engine.setup import _compute_atr, _determine_bias
 from engine.zone_adapters import fvg_to_zone, ob_to_zone, wyckoff_to_zone
 from engine.zone_cluster import cluster_zones
@@ -27,8 +9,6 @@ from engine.zone_types import Context, Zone
 # ── TF ordering ───────────────────────────────────────────────────────────────
 TF_ORDER = ["weekly", "daily", "4h", "1h", "15min"]
 
-# Which detectors to run at each TF — mirrors the checklist exactly.
-# Keys must match COMPONENTS registry names.
 TF_DETECTORS: dict[str, list[str]] = {
     "weekly": ["fvg", "orderblocks"],
     "daily":  ["bos", "orderblocks", "liquidity"],
@@ -38,18 +18,15 @@ TF_DETECTORS: dict[str, list[str]] = {
 }
 
 # Score added when a higher TF has an overlapping zone
-TF_CONFLUENCE_BONUS: dict[str, float] = {
-    "weekly": 25.0,
-    "daily":  20.0,
-    "4h":     15.0,
-    "1h":     10.0,
+TF_CONFLUENCE_BONUS: dict[str, Decimal] = {
+    "weekly": Decimal("25.0"),
+    "daily":  Decimal("20.0"),
+    "4h":     Decimal("15.0"),
+    "1h":     Decimal("10.0"),
 }
 
 # Bonus when the zone sits in the correct Gann premium/discount half
-GANN_ZONE_BONUS = 15.0
-
-
-# ── Public entry point ────────────────────────────────────────────────────────
+GANN_ZONE_BONUS = Decimal("15.0")
 
 
 def detect_confluence(
@@ -64,18 +41,7 @@ def detect_confluence(
 ) -> dict:
     """
     Return ranked confluence zones for `current_tf`.
-
-    All tf_* dicts are keyed by interval string: "weekly", "daily", "4h", "1h", "15min".
-    Only keys present in tf_candles are considered — missing TFs are skipped silently.
-
-    Response shape
-    --------------
-    {
-      "bias":       str,
-      "bias_chain": { tf: "bullish"|"bearish"|"neutral" },
-      "context":    Context,
-      "zones":      list[ScoredZone + { "tf_matches": list[str] }]
-    }
+    Prices are assumed to be decimal.Decimal objects.
     """
     current_candles = tf_candles.get(current_tf, [])
     if not current_candles:
@@ -84,11 +50,10 @@ def detect_confluence(
     atr = _compute_atr(current_candles)
     current_close = current_candles[-1]["close"]
 
-    # ── Bias: walk down from the highest available TF ────────────────────────
+    # ── Bias determination ───────────────────────────────────────────────────
     current_idx = TF_ORDER.index(current_tf) if current_tf in TF_ORDER else len(TF_ORDER)
     higher_tfs = [tf for tf in TF_ORDER[:current_idx] if tf in tf_candles]
 
-    # Find the highest TF that has BOS signals to establish HTF bias
     htf_bos = None
     htf_gann = None
     htf_candles_for_bias = None
@@ -106,7 +71,7 @@ def detect_confluence(
         htf_candles_for_bias,
     )
 
-    # ── Bias chain (informational — one bias value per TF) ───────────────────
+    # ── Bias chain ───────────────────────────────────────────────────────────
     bias_chain: dict[str, str] = {}
     for tf in TF_ORDER:
         if tf not in tf_candles:
@@ -122,8 +87,8 @@ def detect_confluence(
     context: Context = {
         "bias": bias,
         "htf_bias_source": "htf_bos" if htf_bos else "current_bos",
-        "current_close": round(current_close, 5),
-        "atr": round(atr, 6),
+        "current_close": current_close,
+        "atr": atr,
         "htf_interval": higher_tfs[-1] if higher_tfs else None,
     }
 
@@ -161,14 +126,13 @@ def detect_confluence(
         breakdown["tf_confluence"] = tf_bonus
         scored.append({
             **base,
-            "score": round(base["score"] + tf_bonus, 2),
+            "score": base["score"] + tf_bonus,
             "score_breakdown": breakdown,
             "tf_matches": tf_matches,
         })
 
     clustered = cluster_zones(scored, atr)
 
-    # Preserve tf_matches through clustering (base zone's matches are kept via **base spread)
     return {
         "bias": bias,
         "bias_chain": bias_chain,
@@ -177,18 +141,14 @@ def detect_confluence(
     }
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
-
-
 def _collect_zones(
     tf: str,
     fvg_signals: list[dict],
     ob_signals: list[dict],
     wyckoff_signals: list[dict],
     bias: str,
-    atr: float,
+    atr: Decimal,
 ) -> list[Zone]:
-    """Collect unmitigated, bias-aligned zones for a TF using only checklist-relevant signals."""
     detectors = TF_DETECTORS.get(tf, [])
     zones: list[Zone] = []
 
@@ -225,35 +185,28 @@ def _score_tf_confluence(
     gann_4h: list[dict] | None,
     candles_4h: list[dict] | None,
     bias: str,
-) -> tuple[float, list[str]]:
-    """
-    Return (total_tf_bonus, list_of_matching_tfs).
-
-    Checks every higher TF for overlapping zones.  Each TF can only
-    contribute its bonus once even if multiple zones overlap.
-    Also checks Gann premium/discount positioning at 4H.
-    """
+) -> tuple[Decimal, list[str]]:
     current_idx = TF_ORDER.index(current_tf) if current_tf in TF_ORDER else len(TF_ORDER)
     higher_tfs = TF_ORDER[:current_idx]
 
-    total = 0.0
+    total = Decimal("0.0")
     matches: list[str] = []
 
     for tf in higher_tfs:
         for tz in tf_zone_map.get(tf, []):
             if _zones_overlap(zone, tz):
-                total += TF_CONFLUENCE_BONUS.get(tf, 0.0)
+                total += TF_CONFLUENCE_BONUS.get(tf, Decimal("0.0"))
                 matches.append(tf)
-                break  # count each TF at most once
+                break
 
-    # Gann premium/discount bonus — is the zone in the correct half?
+    # Gann premium/discount bonus
     if gann_4h and candles_4h:
         latest_gann = gann_4h[-1]
-        mid = (latest_gann["high_price"] + latest_gann["low_price"]) / 2
-        zone_mid = (zone["top"] + zone["bottom"]) / 2
+        mid = (latest_gann["high_price"] + latest_gann["low_price"]) / Decimal("2")
+        zone_mid = (zone["top"] + zone["bottom"]) / Decimal("2")
         in_correct_half = (
-            (bias == "bullish" and zone_mid < mid) or  # discount
-            (bias == "bearish" and zone_mid > mid)     # premium
+            (bias == "bullish" and zone_mid < mid) or
+            (bias == "bearish" and zone_mid > mid)
         )
         if in_correct_half:
             total += GANN_ZONE_BONUS

@@ -1,21 +1,11 @@
-"""
-Zone clustering.
-
-Merges ScoredZones that overlap or whose midpoints are within 1 ATR.
-Merged zones get a bonus (+10 per extra zone) to reward confluence.
-
-The return list is sorted by score descending — the first element is the
-highest-conviction zone the scoring engine found.
-"""
-
 from __future__ import annotations
-
+from decimal import Decimal
 from engine.zone_types import ScoredZone
 
-_CLUSTER_BONUS_PER_ZONE = 10.0
+_CLUSTER_BONUS_PER_ZONE = Decimal("10.0")
 
 
-def cluster_zones(zones: list[ScoredZone], atr: float) -> list[ScoredZone]:
+def cluster_zones(zones: list[ScoredZone], atr: Decimal) -> list[ScoredZone]:
     if not zones:
         return []
 
@@ -28,14 +18,14 @@ def cluster_zones(zones: list[ScoredZone], atr: float) -> list[ScoredZone]:
             continue
         group = [a]
         used[i] = True
-        mid_a = (a["top"] + a["bottom"]) / 2
+        mid_a = (a["top"] + a["bottom"]) / Decimal("2")
 
         for j in range(i + 1, len(sorted_zones)):
             if used[j]:
                 continue
             b = sorted_zones[j]
             overlapping = b["top"] >= a["bottom"] and a["top"] >= b["bottom"]
-            close_enough = abs(mid_a - (b["top"] + b["bottom"]) / 2) <= atr
+            close_enough = abs(mid_a - (b["top"] + b["bottom"]) / Decimal("2")) <= atr
             if overlapping or close_enough:
                 group.append(b)
                 used[j] = True
@@ -53,7 +43,7 @@ def _merge(group: list[ScoredZone]) -> ScoredZone:
     top = max(z["top"] for z in group)
     bottom = min(z["bottom"] for z in group)
     base = max(group, key=lambda z: z["score"])
-    cluster_bonus = _CLUSTER_BONUS_PER_ZONE * (len(group) - 1)
+    cluster_bonus = _CLUSTER_BONUS_PER_ZONE * Decimal(str(len(group) - 1))
     total_score = sum(z["score"] for z in group) + cluster_bonus
 
     breakdown = dict(base["score_breakdown"])
@@ -63,7 +53,7 @@ def _merge(group: list[ScoredZone]) -> ScoredZone:
         **base,
         "top": top,
         "bottom": bottom,
-        "score": round(total_score, 2),
+        "score": total_score,
         "score_breakdown": breakdown,
         "cluster_size": len(group),
         "confluence_types": list({z["source_type"] for z in group}),

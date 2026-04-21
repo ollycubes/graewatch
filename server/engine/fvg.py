@@ -1,12 +1,9 @@
+from decimal import Decimal
+
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Fair Value Gaps (FVG) — three-candle gap patterns.
-
-    Bullish FVG: candle[i-2].high < candle[i].low (gap up)
-    Bearish FVG: candle[i-2].low > candle[i].high (gap down)
-
-    Each FVG extends until a later candle's wick enters the gap zone
-    (mitigation), at which point the FVG ends.
+    Prices are assumed to be decimal.Decimal objects.
     """
     fvg_events = []
 

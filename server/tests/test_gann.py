@@ -14,6 +14,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.gann import detect
+from utils.precision import convert_to_float
 from tests.conftest import make_candle, flat_candles
 
 
@@ -58,26 +59,26 @@ def two_boxes_candles() -> list[dict]:
 
 
 def test_empty_candles_returns_empty():
-    assert detect([]) == []
+    assert convert_to_float(detect([])) == []
 
 
 def test_too_few_candles_returns_empty():
-    assert detect(flat_candles(6)) == []
+    assert convert_to_float(detect(flat_candles(6))) == []
 
 
 def test_flat_candles_produce_no_boxes():
     # No distinct swings in flat data
-    assert detect(flat_candles(30)) == []
+    assert convert_to_float(detect(flat_candles(30))) == []
 
 
 def test_bullish_box_detected():
-    result = detect(bullish_box_candles())
+    result = convert_to_float(detect(bullish_box_candles()))
     bullish = [b for b in result if b["direction"] == "bullish"]
     assert len(bullish) >= 1
 
 
 def test_bullish_box_prices():
-    result = detect(bullish_box_candles())
+    result = convert_to_float(detect(bullish_box_candles()))
     box = next(b for b in result if b["direction"] == "bullish")
     assert box["low_price"] == 0.990
     assert box["high_price"] == 1.010
@@ -85,50 +86,50 @@ def test_bullish_box_prices():
 
 def test_bullish_box_start_timestamp_is_swing_low():
     """For a bullish box (low → high), start_timestamp is the swing low."""
-    result = detect(bullish_box_candles())
+    result = convert_to_float(detect(bullish_box_candles()))
     box = next(b for b in result if b["direction"] == "bullish")
     assert box["start_timestamp"] == 6   # swing low at index 6
 
 
 def test_bullish_box_end_timestamp_is_swing_high():
-    result = detect(bullish_box_candles())
+    result = convert_to_float(detect(bullish_box_candles()))
     box = next(b for b in result if b["direction"] == "bullish")
     assert box["end_timestamp"] == 14  # swing high at index 14
 
 
 def test_bearish_box_detected():
-    result = detect(bearish_box_candles())
+    result = convert_to_float(detect(bearish_box_candles()))
     bearish = [b for b in result if b["direction"] == "bearish"]
     assert len(bearish) >= 1
 
 
 def test_bearish_box_prices():
-    result = detect(bearish_box_candles())
+    result = convert_to_float(detect(bearish_box_candles()))
     box = next(b for b in result if b["direction"] == "bearish")
     assert box["high_price"] == 1.010
     assert box["low_price"] == 0.990
 
 
 def test_bearish_box_start_timestamp_is_swing_high():
-    result = detect(bearish_box_candles())
+    result = convert_to_float(detect(bearish_box_candles()))
     box = next(b for b in result if b["direction"] == "bearish")
     assert box["start_timestamp"] == 6   # swing high at index 6
 
 
 def test_gann_box_fields():
-    result = detect(bullish_box_candles())
+    result = convert_to_float(detect(bullish_box_candles()))
     for box in result:
         for key in ("start_timestamp", "end_timestamp", "high_price", "low_price", "direction"):
             assert key in box, f"Missing key '{key}' in Gann box"
 
 
 def test_multiple_boxes_detected():
-    result = detect(two_boxes_candles())
+    result = convert_to_float(detect(two_boxes_candles()))
     assert len(result) >= 2
 
 
 def test_boxes_ordered_by_time():
     """Gann boxes should be ordered chronologically (by start_timestamp)."""
-    result = detect(two_boxes_candles())
+    result = convert_to_float(detect(two_boxes_candles()))
     timestamps = [b["start_timestamp"] for b in result]
     assert timestamps == sorted(timestamps)

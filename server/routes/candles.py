@@ -13,6 +13,7 @@ from routes.intervals import (
     SUPPORTED_INTERVALS,
     TWELVE_DATA_INTERVAL_MAP,
     normalize_interval,
+    normalize_timestamp,
 )
 
 router = APIRouter()
@@ -59,6 +60,12 @@ async def get_candles(
 
             # If the data is fresh we return cached candle data
             await log_fallback(db, "candle_cache_hit", {"pair": pair, "interval": normalized_interval})
+            # Convert string prices back to floats for the frontend
+            for c in candles:
+                c["open"] = float(c["open"])
+                c["high"] = float(c["high"])
+                c["low"] = float(c["low"])
+                c["close"] = float(c["close"])
             return {
                 "source": "cache",
                 "count": len(candles),
@@ -93,14 +100,15 @@ async def get_candles(
     ops = []
     for item in data["values"]:
         # Creating the candle document following its json structure
+        ts = normalize_timestamp(item["datetime"], normalized_interval)
         candle_doc = {
             "pair": pair,
             "interval": normalized_interval,
-            "timestamp": item["datetime"],
-            "open": float(item["open"]),
-            "high": float(item["high"]),
-            "low": float(item["low"]),
-            "close": float(item["close"]),
+            "timestamp": ts,
+            "open": item["open"],
+            "high": item["high"],
+            "low": item["low"],
+            "close": item["close"],
             "fetched_at": now,
         }
         ops.append(
@@ -108,7 +116,7 @@ async def get_candles(
                 {
                     "pair": pair,
                     "interval": normalized_interval,
-                    "timestamp": item["datetime"],
+                    "timestamp": ts,
                 },
                 {"$set": candle_doc},
                 upsert=True,
@@ -118,6 +126,17 @@ async def get_candles(
     if ops:
         await collection.bulk_write(ops, ordered=False)
 
+    # Clean up any stale candles with un-normalized timestamps that may
+    # linger from before timestamp normalization was introduced.
+    normalized_timestamps = {normalize_timestamp(item["datetime"], normalized_interval) for item in data["values"]}
+    stale_result = await collection.delete_many({
+        "pair": pair,
+        "interval": normalized_interval,
+        "timestamp": {"$nin": list(normalized_timestamps)},
+    })
+    if stale_result.deleted_count > 0:
+        print(f"[candles] Cleaned {stale_result.deleted_count} stale {normalized_interval} candles for {pair}")
+
     # Return the stored data
     cursor = collection.find(
         {"pair": pair, "interval": normalized_interval},
@@ -125,6 +144,13 @@ async def get_candles(
     ).sort("timestamp", -1)
     candles = await cursor.to_list(length=5000)
     candles.reverse()
+
+    # Convert string prices back to floats for the frontend
+    for c in candles:
+        c["open"] = float(c["open"])
+        c["high"] = float(c["high"])
+        c["low"] = float(c["low"])
+        c["close"] = float(c["close"])
 
     return {
         "source": "api",

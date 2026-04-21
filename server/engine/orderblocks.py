@@ -1,24 +1,11 @@
 from __future__ import annotations
+from decimal import Decimal
 
 
 def detect(candles: list[dict]) -> list[dict]:
     """
     Detect Order Blocks (OB) — the last opposing candle before a Break of Structure.
-
-    A bullish OB is the last bearish candle before a bullish BOS (close above swing high).
-    A bearish OB is the last bullish candle before a bearish BOS (close below swing low).
-
-    Zone ranges:
-        - Bullish OB (bearish candle): open → low (bottom wick)
-        - Bearish OB (bullish candle): open → high (top wick)
-    Mitigation occurs when a later candle's wick enters the OB zone.
-
-    Returns a list of dicts with:
-        - timestamp:      OB candle timestamp (zone start)
-        - end_timestamp:  when mitigated (zone end), or None if unmitigated
-        - direction:      "bullish" or "bearish"
-        - top:            upper boundary of the OB zone
-        - bottom:         lower boundary of the OB zone
+    Prices are assumed to be decimal.Decimal objects.
     """
     N = 3  # lookback for swing detection (consistent with BOS / Gann)
     swing_highs: list[dict] = []
@@ -85,8 +72,8 @@ def detect(candles: list[dict]) -> list[dict]:
                     "ob_index": ob_candle["index"],
                     "bos_index": i,
                     "direction": "bullish",
-                    "top": ob_candle["open"],
-                    "bottom": ob_candle["low"],
+                    "top": ob_candle["high"],
+                    "bottom": ob_candle["open"],
                     "timestamp": ob_candle["timestamp"],
                 })
             last_swing_high = None  # reset to prevent duplicate BOS signals
@@ -104,15 +91,15 @@ def detect(candles: list[dict]) -> list[dict]:
                     "ob_index": ob_candle["index"],
                     "bos_index": i,
                     "direction": "bearish",
-                    "top": ob_candle["high"],
-                    "bottom": ob_candle["open"],
+                    "top": ob_candle["open"],
+                    "bottom": ob_candle["low"],
                     "timestamp": ob_candle["timestamp"],
                 })
             last_swing_low = None
 
     # ── Step 3: Check mitigation and filter thin zones ───────────────────
     atr = _compute_atr(candles)
-    min_zone = atr * 0.1  # discard OBs thinner than 10% of ATR
+    min_zone = atr * Decimal("0.1")  # discard OBs thinner than 10% of ATR
 
     results: list[dict] = []
     for ob in ob_events:
@@ -130,15 +117,16 @@ def detect(candles: list[dict]) -> list[dict]:
     return results
 
 
-def _compute_atr(candles: list[dict], period: int = 14) -> float:
+def _compute_atr(candles: list[dict], period: int = 14) -> Decimal:
+    """Simple Average True Range calculation using Decimal."""
     if len(candles) < 2:
-        return 0.0001
+        return Decimal("0.0001")
     true_ranges = []
     for i in range(1, len(candles)):
-        h, l, pc = candles[i]["high"], candles[i]["low"], candles[i - 1]["close"]
+        h, l, pc = Decimal(str(candles[i]["high"])), Decimal(str(candles[i]["low"])), Decimal(str(candles[i - 1]["close"]))
         true_ranges.append(max(h - l, abs(h - pc), abs(l - pc)))
     recent = true_ranges[-period:]
-    return sum(recent) / len(recent) if recent else 0.0001
+    return sum(recent) / Decimal(str(len(recent))) if recent else Decimal("0.0001")
 
 
 def _find_last_opposing_candle(
@@ -150,9 +138,6 @@ def _find_last_opposing_candle(
     """
     Walk backwards from the BOS candle to find the last candle of the
     opposing type (bearish candle for a bullish OB, bullish for bearish OB).
-
-    A bearish candle: close < open
-    A bullish candle: close > open
     """
     for j in range(bos_index - 1, max(search_start - 1, -1), -1):
         c = candles[j]
@@ -167,9 +152,6 @@ def _find_mitigation(candles: list[dict], ob: dict) -> str | None:
     """
     Scan forward from the BOS candle to find the first candle whose wick
     enters the OB zone, indicating the block has been mitigated.
-
-    Bullish OB mitigated when a candle's low dips into the zone (low <= top).
-    Bearish OB mitigated when a candle's high reaches into the zone (high >= bottom).
     """
     for k in range(ob["bos_index"] + 1, len(candles)):
         c = candles[k]

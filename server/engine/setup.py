@@ -1,18 +1,5 @@
-"""
-SMC trade setup detection engine.
-
-Replaces the weighted-voting prediction engine with a structurally-grounded
-setup that identifies the three levels a real SMC trade needs:
-
-    Entry POI  — unmitigated OB or FVG in the bias direction near current price
-    Target     — nearest opposing structural level price is drawn to
-    Stop       — invalidation point just beyond the entry POI
-
-The result is a concrete risk/reward setup rather than an arbitrary confidence
-score.
-"""
-
 from __future__ import annotations
+from decimal import Decimal
 
 
 def detect(
@@ -29,22 +16,10 @@ def detect(
 ) -> dict:
     """
     Identify an SMC trade setup from current and higher-timeframe signals.
-
-    Returns a dict with:
-        valid:         bool   — True when all three levels are found
-        bias:          str    — "bullish" | "bearish" | "neutral"
-        entry_top:     float  — upper boundary of the entry POI zone
-        entry_bottom:  float  — lower boundary of the entry POI zone
-        entry_type:    str    — "ob" | "fvg"
-        target:        float  — structural target price
-        target_type:   str    — "ob" | "fvg" | "swing"
-        stop:          float  — invalidation level
-        risk_reward:   float  — reward ÷ risk (rounded to 1dp)
-        at_poi:        bool   — price is currently at / near the entry zone
-        current_close: float
+    Prices are assumed to be decimal.Decimal objects.
     """
     if not candles:
-        return _no_setup("neutral", 0.0)
+        return _no_setup("neutral", Decimal("0.0"))
 
     current_close = candles[-1]["close"]
     atr = _compute_atr(candles)
@@ -55,8 +30,6 @@ def detect(
         return _no_setup("neutral", current_close)
 
     # ── 2. Entry POI ─────────────────────────────────────────────────────────
-    # Instead of blindly picking the nearest zone, use the highly-accurate
-    # Confluence Zones engine to select the highest-scoring POI.
     from engine.zones import detect_zones
     
     zones_result = detect_zones(
@@ -78,12 +51,11 @@ def detect(
     # Grab the highest-scoring zone
     best_zone = zones_result["zones"][0]
     
-    # We must ensure the zone is actually close enough to current price to be a valid setup entry
-    # (e.g. within 5 ATR). The old engine enforced this.
-    zone_mid = (best_zone["top"] + best_zone["bottom"]) / 2
-    if bias == "bullish" and zone_mid > current_close + atr * 5:
+    # We must ensure the zone is actually close enough to current price
+    zone_mid = (best_zone["top"] + best_zone["bottom"]) / Decimal("2")
+    if bias == "bullish" and zone_mid > current_close + atr * Decimal("5"):
         return _no_setup(bias, current_close)
-    if bias == "bearish" and zone_mid < current_close - atr * 5:
+    if bias == "bearish" and zone_mid < current_close - atr * Decimal("5"):
         return _no_setup(bias, current_close)
 
     entry_poi = {
@@ -103,7 +75,7 @@ def detect(
     stop = _find_stop(bias, entry_poi, atr)
 
     # ── 5. Validate geometry ─────────────────────────────────────────────────
-    entry_mid = (entry_poi["top"] + entry_poi["bottom"]) / 2
+    entry_mid = (entry_poi["top"] + entry_poi["bottom"]) / Decimal("2")
 
     if bias == "bullish":
         if target_price <= entry_mid or stop >= entry_poi["bottom"]:
@@ -120,25 +92,24 @@ def detect(
         return _no_setup(bias, current_close)
 
     # ── 6. At-POI flag ───────────────────────────────────────────────────────
-    # True when price is inside or within 1.5 ATR of the entry zone
     at_poi = (
         entry_poi["bottom"] <= current_close <= entry_poi["top"]
-        or abs(current_close - entry_poi["top"]) <= atr * 1.5
-        or abs(current_close - entry_poi["bottom"]) <= atr * 1.5
+        or abs(current_close - entry_poi["top"]) <= atr * Decimal("1.5")
+        or abs(current_close - entry_poi["bottom"]) <= atr * Decimal("1.5")
     )
 
     return {
         "valid": True,
         "bias": bias,
-        "entry_top": round(entry_poi["top"], 5),
-        "entry_bottom": round(entry_poi["bottom"], 5),
+        "entry_top": entry_poi["top"],
+        "entry_bottom": entry_poi["bottom"],
         "entry_type": entry_poi["type"],
-        "target": round(target_price, 5),
+        "target": target_price,
         "target_type": target_type,
-        "stop": round(stop, 5),
-        "risk_reward": round(reward / risk, 1),
+        "stop": stop,
+        "risk_reward": reward / risk,
         "at_poi": at_poi,
-        "current_close": round(current_close, 5),
+        "current_close": current_close,
     }
 
 
@@ -151,14 +122,6 @@ def _determine_bias(
     htf_gann_signals: list[dict] | None,
     htf_candles: list[dict] | None,
 ) -> str:
-    """
-    Bias hierarchy:
-      1. HTF BOS direction (primary — higher timeframe sets the context)
-      2. HTF Gann premium/discount as confirmation of HTF BOS
-      3. Current-TF BOS as fallback when no HTF data
-
-    Returns "neutral" when available signals conflict.
-    """
     htf_bias: str | None = None
     if htf_bos_signals:
         htf_bias = htf_bos_signals[-1].get("direction")
@@ -171,7 +134,7 @@ def _determine_bias(
     if htf_gann_signals and htf_candles:
         latest_close = htf_candles[-1]["close"]
         latest_gann = htf_gann_signals[-1]
-        mid = (latest_gann["high_price"] + latest_gann["low_price"]) / 2
+        mid = (latest_gann["high_price"] + latest_gann["low_price"]) / Decimal("2")
         gann_bias = "bullish" if latest_close < mid else "bearish"
 
     if htf_bias and current_bias:
@@ -185,23 +148,13 @@ def _determine_bias(
     return current_bias or "neutral"
 
 
-
-
-
 def _find_target(
     bias: str,
-    current_close: float,
+    current_close: Decimal,
     ob_signals: list[dict],
     fvg_signals: list[dict],
     bos_signals: list[dict],
-) -> tuple[float | None, str | None]:
-    """
-    Find the nearest structural level price is drawn towards.
-
-    For bullish: look for unmitigated bearish OB/FVG or prior swing highs above
-    current price — these are resistance levels where price is likely to react.
-    For bearish: the mirror image below.
-    """
+) -> tuple[Decimal | None, str | None]:
     opposing = "bearish" if bias == "bullish" else "bullish"
     candidates = []
 
@@ -211,7 +164,7 @@ def _find_target(
             continue
         if ob["direction"] != opposing:
             continue
-        zone_mid = (ob["top"] + ob["bottom"]) / 2
+        zone_mid = (ob["top"] + ob["bottom"]) / Decimal("2")
         if bias == "bullish" and zone_mid > current_close:
             candidates.append({"price": zone_mid, "type": "ob", "dist": zone_mid - current_close})
         elif bias == "bearish" and zone_mid < current_close:
@@ -222,13 +175,13 @@ def _find_target(
             continue
         if fvg["direction"] != opposing:
             continue
-        zone_mid = (fvg["top"] + fvg["bottom"]) / 2
+        zone_mid = (fvg["top"] + fvg["bottom"]) / Decimal("2")
         if bias == "bullish" and zone_mid > current_close:
             candidates.append({"price": zone_mid, "type": "fvg", "dist": zone_mid - current_close})
         elif bias == "bearish" and zone_mid < current_close:
             candidates.append({"price": zone_mid, "type": "fvg", "dist": current_close - zone_mid})
 
-    # BOS swing references — the prior highs/lows that were broken, now structural
+    # BOS swing references
     for bos in bos_signals:
         level = bos.get("swing_ref")
         if level is None:
@@ -245,32 +198,29 @@ def _find_target(
     return best["price"], best["type"]
 
 
-def _find_stop(bias: str, entry_poi: dict, atr: float) -> float:
-    """
-    Stop sits just beyond the entry zone with a 0.5-ATR buffer.
-    If price reaches the stop, the POI has failed and the setup is invalid.
-    """
+def _find_stop(bias: str, entry_poi: dict, atr: Decimal) -> Decimal:
     return (
-        entry_poi["bottom"] - atr * 0.5
+        entry_poi["bottom"] - atr * Decimal("0.5")
         if bias == "bullish"
-        else entry_poi["top"] + atr * 0.5
+        else entry_poi["top"] + atr * Decimal("0.5")
     )
 
 
-def _no_setup(bias: str, current_close: float) -> dict:
+def _no_setup(bias: str, current_close: Decimal) -> dict:
     return {
         "valid": False,
         "bias": bias,
-        "current_close": round(current_close, 5) if current_close else 0.0,
+        "current_close": current_close,
     }
 
 
-def _compute_atr(candles: list[dict], period: int = 14) -> float:
+def _compute_atr(candles: list[dict], period: int = 14) -> Decimal:
+    """Simple Average True Range calculation using Decimal."""
     if len(candles) < 2:
-        return 0.0001
+        return Decimal("0.0001")
     true_ranges = []
     for i in range(1, len(candles)):
-        h, l, pc = candles[i]["high"], candles[i]["low"], candles[i - 1]["close"]
+        h, l, pc = Decimal(str(candles[i]["high"])), Decimal(str(candles[i]["low"])), Decimal(str(candles[i - 1]["close"]))
         true_ranges.append(max(h - l, abs(h - pc), abs(l - pc)))
     recent = true_ranges[-period:]
-    return sum(recent) / len(recent) if recent else 0.0001
+    return sum(recent) / Decimal(str(len(recent))) if recent else Decimal("0.0001")

@@ -6,6 +6,7 @@ from engine import COMPONENTS
 from engine.setup import detect as detect_setup
 from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
 from utils.audit import log_performance
+from utils.precision import convert_candles_to_decimal, convert_to_float
 
 router = APIRouter()
 
@@ -56,6 +57,9 @@ async def get_setup(
     ).sort("timestamp", -1)
     candles = await cursor.to_list(length=5000)
     candles.reverse()
+    
+    # Convert to Decimal for engine processing
+    decimal_candles = convert_candles_to_decimal(candles)
 
     if not candles:
         raise HTTPException(
@@ -64,11 +68,11 @@ async def get_setup(
         )
 
     # ── Run detectors on current TF ──────────────────────────────────────────
-    bos_signals = COMPONENTS["bos"](candles)
-    fvg_signals = COMPONENTS["fvg"](candles)
-    ob_signals = COMPONENTS["orderblocks"](candles)
-    liq_signals = COMPONENTS["liquidity"](candles)
-    wyckoff_signals = COMPONENTS["wyckoff"](candles)
+    bos_signals = COMPONENTS["bos"](decimal_candles)
+    fvg_signals = COMPONENTS["fvg"](decimal_candles)
+    ob_signals = COMPONENTS["orderblocks"](decimal_candles)
+    liq_signals = COMPONENTS["liquidity"](decimal_candles)
+    wyckoff_signals = COMPONENTS["wyckoff"](decimal_candles)
 
     # Filter signals to only those originating in the selection window
     def filter_signals(signals):
@@ -108,13 +112,16 @@ async def get_setup(
         htf_candles.reverse()
 
         if htf_candles:
-            htf_bos_signals = COMPONENTS["bos"](htf_candles)
-            htf_gann_signals = COMPONENTS["gann"](htf_candles)
+            decimal_htf_candles = convert_candles_to_decimal(htf_candles)
+            htf_bos_signals = COMPONENTS["bos"](decimal_htf_candles)
+            htf_gann_signals = COMPONENTS["gann"](decimal_htf_candles)
+            # Use decimal HTF candles for detection
+            htf_candles = decimal_htf_candles
 
     # ── Detect setup ─────────────────────────────────────────────────────────
     start_time = time.time()
     result = detect_setup(
-        candles=candles,
+        candles=decimal_candles,
         bos_signals=bos_signals,
         fvg_signals=fvg_signals,
         ob_signals=ob_signals,
@@ -133,5 +140,8 @@ async def get_setup(
         "valid": result.get("valid", False),
         "bias": result.get("bias", "neutral")
     })
+
+    # Convert results back to float for JSON response
+    result = convert_to_float(result)
 
     return {"pair": pair, "interval": normalized_interval, **result}

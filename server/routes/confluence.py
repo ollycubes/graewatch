@@ -20,6 +20,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
 from engine.confluence import TF_DETECTORS, TF_ORDER, detect_confluence
 from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
+from utils.precision import convert_candles_to_decimal, convert_to_float
 
 router = APIRouter()
 
@@ -96,6 +97,9 @@ async def get_confluence(
 
     candle_results = await asyncio.gather(*[fetch_tf(tf) for tf in relevant_tfs])
     tf_candles = {tf: c for tf, c in candle_results if c}
+    
+    # Convert all TF candles to Decimal for engine processing
+    decimal_tf_candles = {tf: convert_candles_to_decimal(c) for tf, c in tf_candles.items()}
 
     if not tf_candles.get(normalized):
         raise HTTPException(
@@ -111,7 +115,7 @@ async def get_confluence(
     tf_wyckoff: dict[str, list[dict]] = {}
     tf_gann:    dict[str, list[dict]] = {}
 
-    for tf, candles in tf_candles.items():
+    for tf, candles in decimal_tf_candles.items():
         detectors = TF_DETECTORS.get(tf, [])
         if "bos" in detectors:
             tf_bos[tf] = COMPONENTS["bos"](candles)
@@ -147,7 +151,7 @@ async def get_confluence(
 
     # ── Run confluence engine ─────────────────────────────────────────────────
     result = detect_confluence(
-        tf_candles=tf_candles,
+        tf_candles=decimal_tf_candles,
         tf_bos=tf_bos,
         tf_fvg=tf_fvg,
         tf_ob=tf_ob,
@@ -156,5 +160,8 @@ async def get_confluence(
         tf_gann=tf_gann,
         current_tf=normalized,
     )
+    
+    # Convert results back to float for JSON response
+    result = convert_to_float(result)
 
     return {"pair": pair, "interval": normalized, **result}

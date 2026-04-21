@@ -2034,3 +2034,142 @@ body {
   color: var(--text-muted);
   font-weight: 500;
 }
+
+/* ── Help Button (Dashboard header) ───────────────────────────────────────── */
+.dashboard__help-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(150, 126, 118, 0.4);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.dashboard__help-btn:hover {
+  background: rgba(150, 126, 118, 0.12);
+  color: var(--text-primary);
+  border-color: rgba(150, 126, 118, 0.7);
+}
+
+/* ── Tutorial Overlay ─────────────────────────────────────────────────────── */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
+.tutorial-overlay__mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+svg.tutorial-overlay__mask {
+  background: none;
+}
+
+/* ── Tutorial Tooltip ─────────────────────────────────────────────────────── */
+.tutorial-tooltip {
+  position: fixed;
+  z-index: 2;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: linear-gradient(160deg, #2a2320 0%, #1e1915 100%);
+  border: 1px solid rgba(215, 192, 174, 0.3);
+  border-radius: 14px;
+  padding: 18px 20px 14px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(215, 192, 174, 0.08) inset;
+  animation: tutorial-fadein 0.3s ease-out;
+}
+
+@keyframes tutorial-fadein {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-tooltip__header {
+  margin-bottom: 8px;
+}
+
+.tutorial-tooltip__counter {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--palette-peach);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tutorial-tooltip__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--palette-cream);
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+
+.tutorial-tooltip__body {
+  font-size: 0.82rem;
+  color: rgba(238, 227, 203, 0.75);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.tutorial-tooltip__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-tooltip__btn {
+  padding: 5px 14px;
+  border-radius: 7px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(215, 192, 174, 0.25);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.tutorial-tooltip__btn--next {
+  background: var(--palette-peach);
+  color: #1e1915;
+  border-color: var(--palette-peach);
+  margin-left: auto;
+}
+
+.tutorial-tooltip__btn--next:hover {
+  background: var(--palette-cream);
+  border-color: var(--palette-cream);
+}
+
+.tutorial-tooltip__btn--back {
+  background: transparent;
+  color: rgba(238, 227, 203, 0.6);
+}
+
+.tutorial-tooltip__btn--back:hover {
+  background: rgba(215, 192, 174, 0.1);
+  color: var(--palette-cream);
+}
+
+.tutorial-tooltip__btn--skip {
+  background: transparent;
+  color: rgba(238, 227, 203, 0.4);
+  border-color: transparent;
+}
+
+.tutorial-tooltip__btn--skip:hover {
+  color: rgba(238, 227, 203, 0.7);
+}

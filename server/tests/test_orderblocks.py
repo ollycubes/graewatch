@@ -16,6 +16,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.orderblocks import detect, _find_last_opposing_candle, _find_mitigation
+from utils.precision import convert_to_float
 from tests.conftest import make_candle, flat_candles
 
 
@@ -61,26 +62,26 @@ def bearish_ob_scenario() -> list[dict]:
     return candles
 
 
-# ── detect() tests ────────────────────────────────────────────────────────────
+# ── convert_to_float(detect()) tests ────────────────────────────────────────────────────────────
 
 
 def test_empty_candles_returns_empty():
-    assert detect([]) == []
+    assert convert_to_float(detect([])) == []
 
 
 def test_too_few_candles_returns_empty():
-    assert detect(flat_candles(6)) == []
+    assert convert_to_float(detect(flat_candles(6))) == []
 
 
 def test_bullish_ob_detected():
-    result = detect(bullish_ob_scenario())
+    result = convert_to_float(detect(bullish_ob_scenario()))
     bullish = [ob for ob in result if ob["direction"] == "bullish"]
     assert len(bullish) >= 1
 
 
 def test_bullish_ob_zone_open_to_high():
     """Bullish OB zone: bottom = OB candle's open, top = OB candle's high."""
-    result = detect(bullish_ob_scenario())
+    result = convert_to_float(detect(bullish_ob_scenario()))
     ob = next(o for o in result if o["direction"] == "bullish")
     # OB candle at index 13: open=1.015, high=1.017
     assert ob["bottom"] == 1.015
@@ -88,14 +89,14 @@ def test_bullish_ob_zone_open_to_high():
 
 
 def test_bearish_ob_detected():
-    result = detect(bearish_ob_scenario())
+    result = convert_to_float(detect(bearish_ob_scenario()))
     bearish = [ob for ob in result if ob["direction"] == "bearish"]
     assert len(bearish) >= 1
 
 
 def test_bearish_ob_zone_low_to_open():
     """Bearish OB zone: top = OB candle's open, bottom = OB candle's low."""
-    result = detect(bearish_ob_scenario())
+    result = convert_to_float(detect(bearish_ob_scenario()))
     ob = next(o for o in result if o["direction"] == "bearish")
     # OB candle at index 13: open=0.995, low=0.994
     assert ob["top"] == 0.995
@@ -103,14 +104,14 @@ def test_bearish_ob_zone_low_to_open():
 
 
 def test_ob_event_fields():
-    result = detect(bullish_ob_scenario())
+    result = convert_to_float(detect(bullish_ob_scenario()))
     for ob in result:
         for key in ("timestamp", "end_timestamp", "direction", "top", "bottom"):
             assert key in ob, f"Missing key '{key}' in OB event"
 
 
 def test_flat_candles_produce_no_ob():
-    assert detect(flat_candles(30)) == []
+    assert convert_to_float(detect(flat_candles(30))) == []
 
 
 def test_bullish_ob_mitigated():
@@ -118,14 +119,14 @@ def test_bullish_ob_mitigated():
     candles = bullish_ob_scenario()
     # OB zone: bottom=1.015, top=1.017 — low=1.016 <= 1.017 enters the zone
     candles.append(make_candle(20, 1.020, 1.022, 1.016, 1.020))
-    result = detect(candles)
+    result = convert_to_float(convert_to_float(detect(candles)))
     ob = next(o for o in result if o["direction"] == "bullish")
     assert ob["end_timestamp"] == 20  # mitigated at the new candle
 
 
 def test_bullish_ob_unmitigated():
     """No candle enters the zone — end_timestamp should be None."""
-    result = detect(bullish_ob_scenario())
+    result = convert_to_float(detect(bullish_ob_scenario()))
     ob = next(o for o in result if o["direction"] == "bullish")
     assert ob["end_timestamp"] is None
 

@@ -1,16 +1,18 @@
 """
 Shared test helpers and fixtures for engine unit tests.
+Uses Decimal for high-precision price math.
 """
+from decimal import Decimal
 
 
 def make_candle(timestamp: int, open_: float, high: float, low: float, close: float) -> dict:
-    """Build a minimal candle dict."""
+    """Build a minimal candle dict with Decimal prices."""
     return {
         "timestamp": timestamp,
-        "open": open_,
-        "high": high,
-        "low": low,
-        "close": close,
+        "open": Decimal(str(open_)),
+        "high": Decimal(str(high)),
+        "low": Decimal(str(low)),
+        "close": Decimal(str(close)),
     }
 
 

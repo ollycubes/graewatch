@@ -17,6 +17,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.liquidity import detect, _compute_atr, _mark_pools
+from utils.precision import convert_to_float
 from tests.conftest import make_candle, flat_candles
 
 
@@ -76,39 +77,39 @@ def pool_scenario() -> list[dict]:
 
 
 def test_empty_candles_returns_empty():
-    assert detect([]) == []
+    assert convert_to_float(detect([])) == []
 
 
 def test_too_few_candles_returns_empty():
-    assert detect(flat_candles(6)) == []
+    assert convert_to_float(detect(flat_candles(6))) == []
 
 
 def test_sweep_above_high_is_bearish():
-    result = detect(sweep_above_high_candles())
+    result = convert_to_float(detect(sweep_above_high_candles()))
     bearish = [e for e in result if e["direction"] == "bearish"]
     assert len(bearish) >= 1
 
 
 def test_sweep_above_high_price_is_swing_level():
-    result = detect(sweep_above_high_candles())
+    result = convert_to_float(detect(sweep_above_high_candles()))
     event = next(e for e in result if e["direction"] == "bearish")
     assert event["price"] == 1.010
 
 
 def test_sweep_above_high_timestamp_is_sweep_candle():
-    result = detect(sweep_above_high_candles())
+    result = convert_to_float(detect(sweep_above_high_candles()))
     event = next(e for e in result if e["direction"] == "bearish")
     assert event["timestamp"] == 15
 
 
 def test_sweep_below_low_is_bullish():
-    result = detect(sweep_below_low_candles())
+    result = convert_to_float(detect(sweep_below_low_candles()))
     bullish = [e for e in result if e["direction"] == "bullish"]
     assert len(bullish) >= 1
 
 
 def test_sweep_below_low_price_is_swing_level():
-    result = detect(sweep_below_low_candles())
+    result = convert_to_float(detect(sweep_below_low_candles()))
     event = next(e for e in result if e["direction"] == "bullish")
     assert event["price"] == 0.990
 
@@ -119,7 +120,7 @@ def test_sweep_when_close_above_swept_high():
     candles[6] = make_candle(6, 1.000, 1.010, 1.000, 1.000)
     # Close above the swing high — now IS a sweep/mitigation
     candles[15] = make_candle(15, 1.009, 1.012, 1.007, 1.011)
-    result = detect(candles)
+    result = convert_to_float(convert_to_float(detect(candles)))
     bearish = [e for e in result if e["direction"] == "bearish" and e.get("swept", False)]
     assert len(bearish) == 1
 
@@ -130,7 +131,7 @@ def test_sweep_when_close_below_swept_low():
     candles[6] = make_candle(6, 1.000, 1.000, 0.990, 1.000)
     # Close below the swing low — now IS a sweep/mitigation
     candles[15] = make_candle(15, 0.991, 0.993, 0.987, 0.988)
-    result = detect(candles)
+    result = convert_to_float(convert_to_float(detect(candles)))
     bullish = [e for e in result if e["direction"] == "bullish" and e.get("swept", False)]
     assert len(bullish) == 1
 
@@ -140,20 +141,20 @@ def test_swept_level_removed_after_sweep():
     candles = sweep_above_high_candles()
     # Add a second candle that also wicks above 1.010 and closes below
     candles[16] = make_candle(16, 1.008, 1.013, 1.006, 1.007)
-    result = detect(candles)
+    result = convert_to_float(convert_to_float(detect(candles)))
     bearish = [e for e in result if e["direction"] == "bearish" and e["price"] == 1.010]
     assert len(bearish) == 1  # swept level removed after first sweep
 
 
 def test_event_fields():
-    result = detect(sweep_above_high_candles())
+    result = convert_to_float(detect(sweep_above_high_candles()))
     for event in result:
         for key in ("source_timestamp", "timestamp", "direction", "price", "pool"):
             assert key in event, f"Missing key '{key}' in liquidity event"
 
 
 def test_pool_flag_on_equal_highs():
-    result = detect(pool_scenario())
+    result = convert_to_float(detect(pool_scenario()))
     swept = [e for e in result if e["direction"] == "bearish"]
     assert len(swept) >= 1
     # The swept level was part of a pool
@@ -162,7 +163,7 @@ def test_pool_flag_on_equal_highs():
 
 def test_non_pool_sweep_has_pool_false():
     """Single isolated swing (no nearby duplicate) should not be marked pool."""
-    result = detect(sweep_above_high_candles())
+    result = convert_to_float(detect(sweep_above_high_candles()))
     event = next(e for e in result if e["direction"] == "bearish")
     assert event["pool"] is False
 
@@ -181,7 +182,7 @@ def test_compute_atr_basic():
         make_candle(0, 1.000, 1.000, 1.000, 1.000),
         make_candle(1, 1.000, 1.010, 0.990, 1.000),
     ]
-    atr = _compute_atr(candles, period=1)
+    atr = float(_compute_atr(candles, period=1))
     assert abs(atr - 0.02) < 1e-10  # H-L = 1.010 - 0.990
 
 

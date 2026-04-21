@@ -873,12 +873,14 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
         ref={chartContainerRef}
         className={isSelecting ? 'chart-container chart-container--selecting' : 'chart-container'}
         style={{ width: '100%', borderRadius: '8px', overflow: 'hidden' }}
+        data-tour="chart"
       />
       <div className="chart-toolbar">
         <button
           className={`chart-toolbar__btn ${isSelecting ? 'chart-toolbar__btn--active' : ''}`}
           onClick={() => setIsSelecting(!isSelecting)}
           title={CHART.selectTitle}
+          data-tour="select-tool"
         >
           {CHART.selectLabel}
         </button>

@@ -1,26 +1,12 @@
 from __future__ import annotations
+from decimal import Decimal
 
 
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect liquidity sweeps — price wicks beyond a swing high/low then closes
     back inside, indicating a stop hunt / liquidity grab.
-
-    Two sub-types:
-        1. Swing sweeps: wick beyond any confirmed swing, close back inside.
-        2. Equal highs/lows (pools): clusters of swings at nearly the same
-           price. Swept pools are flagged with pool=True.
-
-    Direction follows the expected move AFTER the sweep:
-        - Sweep above a swing high → bearish (grabbed longs' stops, expect down)
-        - Sweep below a swing low  → bullish (grabbed shorts' stops, expect up)
-
-    Returns a list of dicts:
-        - source_timestamp: timestamp of the swing that formed the level
-        - timestamp:        timestamp of the sweep candle
-        - direction:        "bullish" or "bearish" (expected move after sweep)
-        - price:            the swept swing price level
-        - pool:             True if the level was part of an equal highs/lows cluster
+    Prices are assumed to be decimal.Decimal objects.
     """
     if not candles:
         return []
@@ -62,7 +48,7 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
 
     # ── Step 2: Compute ATR for equal-level tolerance ──────────────────────
     atr = _compute_atr(candles, period=14)
-    tolerance = atr * 0.1
+    tolerance = atr * Decimal("0.1")
 
     # ── Step 3: Mark equal highs / equal lows (pools) ──────────────────────
     _mark_pools(swing_highs, tolerance)
@@ -148,21 +134,21 @@ def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     return events
 
 
-def _compute_atr(candles, period=14):
-    """Simple Average True Range calculation."""
+def _compute_atr(candles: list[dict], period=14) -> Decimal:
+    """Simple Average True Range calculation using Decimal."""
     if len(candles) < 2:
-        return 0.0
+        return Decimal("0.0")
 
     true_ranges = []
     for i in range(1, len(candles)):
-        high = candles[i]["high"]
-        low = candles[i]["low"]
-        prev_close = candles[i - 1]["close"]
+        high = Decimal(str(candles[i]["high"]))
+        low = Decimal(str(candles[i]["low"]))
+        prev_close = Decimal(str(candles[i - 1]["close"]))
         tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
         true_ranges.append(tr)
 
     recent = true_ranges[-period:]
-    return sum(recent) / len(recent) if recent else 0.0
+    return sum(recent) / Decimal(str(len(recent))) if recent else Decimal("0.0")
 
 
 def _mark_pools(swings, tolerance):

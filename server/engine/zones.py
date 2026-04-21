@@ -1,25 +1,5 @@
-"""
-Zone prediction engine.
-
-This is a POST-PROCESSING layer on top of the existing signal detectors.
-It does not replace any detector — it converts their outputs into ranked,
-clustered zone predictions.
-
-Pipeline
---------
-existing signals (FVG / OB / Wyckoff / Liquidity / BOS)
-  → zone_adapters   (signal dict → Zone dict)
-  → zone_scoring    (Zone + Context → ScoredZone)
-  → zone_cluster    (ScoredZone[] → merged, sorted ScoredZone[])
-
-Public API
-----------
-detect(candles)          — keeps the COMPONENTS registry signature; returns []
-detect_zones(...)        — full pipeline; call this from routes/zones.py
-"""
-
 from __future__ import annotations
-
+from decimal import Decimal
 from engine.setup import _compute_atr, _determine_bias
 from engine.zone_adapters import fvg_to_zone, ob_to_zone, wyckoff_to_zone
 from engine.zone_cluster import cluster_zones
@@ -41,14 +21,7 @@ def detect_zones(
 ) -> dict:
     """
     Return all unmitigated, bias-aligned zones ranked by score.
-
-    Response shape
-    --------------
-    {
-      "bias":    "bullish" | "bearish" | "neutral",
-      "context": Context,
-      "zones":   list[ScoredZone]   # sorted by score descending
-    }
+    Prices are assumed to be decimal.Decimal objects.
     """
     if not candles:
         return {"bias": "neutral", "context": {}, "zones": []}
@@ -63,8 +36,8 @@ def detect_zones(
     context: Context = {
         "bias": bias,
         "htf_bias_source": _bias_source(bos_signals, htf_bos_signals),
-        "current_close": round(current_close, 5),
-        "atr": round(atr, 6),
+        "current_close": current_close,
+        "atr": atr,
         "htf_interval": htf_interval,
     }
 
@@ -97,9 +70,6 @@ def detect_zones(
     clustered = cluster_zones(scored, atr)
 
     return {"bias": bias, "context": context, "zones": clustered}
-
-
-# ── Internal ──────────────────────────────────────────────────────────────────
 
 
 def _bias_source(bos_signals: list[dict], htf_bos_signals: list[dict] | None) -> str:

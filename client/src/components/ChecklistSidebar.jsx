@@ -27,7 +27,7 @@ function ChecklistSidebar() {
     hasSelection && currentStep < CHECKLIST_STEPS.length - 1 && checkComplete(currentStep);
 
   return (
-    <aside className="checklist-sidebar" aria-label="SMC Checklist">
+    <aside className="checklist-sidebar" aria-label="SMC Checklist" data-tour="checklist">
       <div className="checklist-sidebar__header">
         <h2>{CL.title}</h2>
         <p className="checklist-sidebar__pair">{state.pair}</p>

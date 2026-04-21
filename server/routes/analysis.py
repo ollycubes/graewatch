@@ -5,6 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from engine import COMPONENTS
 from routes.intervals import SUPPORTED_INTERVALS, normalize_interval
 from utils.audit import log_performance
+from utils.precision import convert_candles_to_decimal, convert_to_float
 
 router = APIRouter()
 
@@ -88,10 +89,14 @@ async def get_analysis(
         )
 
     # Run the algorithms on the FULL dataset
+    decimal_candles = convert_candles_to_decimal(candles)
     detect_fn = COMPONENTS[component]
     start_time = time.time()
-    results = detect_fn(candles)
+    results = detect_fn(decimal_candles)
     duration_ms = (time.time() - start_time) * 1000
+    
+    # Convert results back to float for JSON and caching
+    results = convert_to_float(results)
     
     await log_performance(db, f"analysis_{component}", duration_ms, {
         "pair": pair, 

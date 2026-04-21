@@ -1,21 +1,31 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import CandlestickChart from './CandlestickChart';
 import PairSelector from './PairSelector';
 import ChecklistSidebar from './ChecklistSidebar';
 import SetupCard from './SetupCard';
 import OverlayToggles from './OverlayToggles';
 import SnapshotHistory from './SnapshotHistory';
+import TutorialOverlay, { STORAGE_KEY } from './TutorialOverlay';
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
 import content from '../content.json';
 
-const { app, nav, controls } = content;
+const { app, nav, controls, tutorial: TU } = content;
 
 function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();
   const screenshotRef = useRef(null);
   const currentStepDef = CHECKLIST_STEPS[state.checklist.currentStep];
   const [page, setPage] = useState('analysis');
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Auto-show tutorial on first visit
+  useEffect(() => {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      const t = setTimeout(() => setShowTutorial(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   const handleSelectionChange = useCallback(
     (sel) => {
@@ -46,20 +56,31 @@ function DashboardOverview() {
           <button
             className={`dashboard__nav-tab${page === 'journal' ? ' dashboard__nav-tab--active' : ''}`}
             onClick={() => setPage('journal')}
+            data-tour="journal-tab"
           >
             {nav.journal}
           </button>
         </nav>
 
+        <button
+          className="dashboard__help-btn"
+          onClick={() => setShowTutorial(true)}
+          title={TU.helpTitle}
+          aria-label={TU.helpTitle}
+        >
+          {TU.helpButton}
+        </button>
       </header>
 
       {page === 'analysis' && (
         <>
           <div className="dashboard__controls" aria-label="Chart controls">
             <div className="dashboard__controls-primary">
-              <PairSelector />
+              <span data-tour="pair-selector">
+                <PairSelector />
+              </span>
 
-              <label className="control">
+              <label className="control" data-tour="interval">
                 <span>{controls.interval}</span>
                 <select
                   value={state.interval}
@@ -83,7 +104,7 @@ function DashboardOverview() {
             </div>
           </div>
 
-          <div className="dashboard__prediction-bar">
+          <div className="dashboard__prediction-bar" data-tour="setup-card">
             <SetupCard
               pair={state.pair}
               interval={state.interval}
@@ -122,6 +143,7 @@ function DashboardOverview() {
           <SnapshotHistory pair={state.pair} />
         </div>
       )}
+      <TutorialOverlay active={showTutorial} onClose={() => setShowTutorial(false)} />
     </section>
   );
 }

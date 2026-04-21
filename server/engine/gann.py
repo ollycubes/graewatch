@@ -1,17 +1,9 @@
+from decimal import Decimal
+
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Gann box zones by pairing consecutive swing highs and swing lows.
-
-    A Gann box spans from one swing point to the next opposite swing point,
-    forming a price/time rectangle. The frontend draws subdivision grid lines
-    and diagonal angle lines within each box.
-
-    Returns a list of dicts, each with:
-        - start_timestamp: timestamp of the first swing point
-        - end_timestamp:   timestamp of the second swing point
-        - high_price:      top of the box
-        - low_price:       bottom of the box
-        - direction:       "bullish" (swing low first) or "bearish" (swing high first)
+    Prices are assumed to be decimal.Decimal objects.
     """
     N = 3  # lookback for swing detection (same as BOS)
     swings = []
