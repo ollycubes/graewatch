@@ -2173,3 +2173,186 @@ svg.tutorial-overlay__mask {
 .tutorial-tooltip__btn--skip:hover {
   color: rgba(238, 227, 203, 0.7);
 }
+
+/* ── Auth Screen ──────────────────────────────────────────────────────────── */
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(183, 196, 207, 0.48), transparent 34%),
+    radial-gradient(circle at 88% 5%, rgba(238, 227, 203, 0.7), transparent 26%),
+    #f4efe6;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(165deg, var(--palette-cream) 0%, #f5ecda 55%, #f1e6d1 100%);
+  border: 1px solid rgba(150, 126, 118, 0.35);
+  border-radius: 18px;
+  padding: 36px 32px 28px;
+  box-shadow: 0 22px 46px rgba(150, 126, 118, 0.22);
+  animation: auth-fadein 0.5s ease-out;
+}
+
+@keyframes auth-fadein {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.auth-card__header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-card__title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #4f4039;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+.auth-card__tagline {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin: 0;
+}
+
+.auth-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-card__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.auth-card__input {
+  padding: 10px 14px;
+  border: 1px solid rgba(150, 126, 118, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.auth-card__input:focus {
+  border-color: var(--palette-brown);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.auth-card__input::placeholder {
+  color: rgba(110, 93, 86, 0.5);
+}
+
+.auth-card__error {
+  font-size: 0.78rem;
+  color: #8f3535;
+  background: rgba(143, 53, 53, 0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.auth-card__submit {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--palette-brown);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 4px;
+}
+
+.auth-card__submit:hover:not(:disabled) {
+  background: #7d6a63;
+}
+
+.auth-card__submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.auth-card__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-card__switch {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.auth-card__switch-btn {
+  background: none;
+  border: none;
+  color: var(--palette-brown);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-card__switch-btn:hover {
+  color: #4f4039;
+}
+
+/* ── User Badge (Dashboard header) ────────────────────────────────────────── */
+.dashboard__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dashboard__user-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard__logout-btn {
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(150, 126, 118, 0.35);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.dashboard__logout-btn:hover {
+  background: rgba(150, 126, 118, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(150, 126, 118, 0.6);
+}

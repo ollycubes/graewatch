@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import content from '../content.json';
-
-const { chart: CHART } = content;
 import { createChart, CandlestickSeries } from 'lightweight-charts';
 import { BOSLinesPrimitive } from './primitives/BOSLinesPrimitive';
 import { FVGBoxesPrimitive } from './primitives/FVGBoxesPrimitive';
@@ -13,6 +11,8 @@ import { SetupPrimitive } from './primitives/SetupPrimitive';
 import { ZonesPrimitive } from './primitives/ZonesPrimitive';
 import { SelectionBoxPrimitive } from './primitives/SelectionBoxPrimitive';
 import { HTF_MAP } from '../context/dashboardStore';
+
+const { chart: CHART } = content;
 
 function toChartTime(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {

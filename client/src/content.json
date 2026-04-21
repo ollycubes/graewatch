@@ -3,6 +3,28 @@
     "title": "Graewatch",
     "tagline": "Top-down SMC analysis"
   },
+  "auth": {
+    "title": "Graewatch",
+    "tagline": "Read the structure. Trade the intent.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Min. 6 characters",
+    "nameLabel": "Display Name",
+    "namePlaceholder": "Your name",
+    "loginLabel": "Sign In",
+    "registerLabel": "Create Account",
+    "submittingLabel": "…",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "switchToRegister": "Create one",
+    "switchToLogin": "Sign in",
+    "logoutLabel": "Sign out",
+    "logoutTitle": "Sign out of Graewatch",
+    "errors": {
+      "nameRequired": "Display name is required"
+    }
+  },
   "intro": {
     "title": "GRAEWATCH",
     "tagline": "Read the structure. Trade the intent.",

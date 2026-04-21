@@ -10,22 +10,20 @@ from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from fastapi import Depends, HTTPException, Request
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 # ── Password hashing ─────────────────────────────────────────────────────────
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(plain: str) -> str:
     """Return a bcrypt hash of the plain-text password."""
-    return pwd_context.hash(plain)
+    return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Check a plain-text password against a stored bcrypt hash."""
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 # ── JWT tokens ────────────────────────────────────────────────────────────────

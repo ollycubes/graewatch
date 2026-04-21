@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import content from '../content.json';
 
 const { setup: SC, maps } = content;
@@ -246,6 +247,7 @@ function SetupDetailOverlay({ pair, interval, setup, zones, biasChain, entryBott
 }
 
 function SetupCard({ pair, interval, selection, onClearSelection, onSetup, screenshotRef }) {
+  const { authHeaders } = useAuth();
   const [setup, setSetup] = useState(null);
   const [zones, setZones] = useState([]);
   const [biasChain, setBiasChain] = useState(null);
@@ -315,7 +317,7 @@ function SetupCard({ pair, interval, selection, onClearSelection, onSetup, scree
       const screenshot = screenshotRef?.current ? screenshotRef.current() : null;
       await fetch('/api/snapshots', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           pair,
           interval,

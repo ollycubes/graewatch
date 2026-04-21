@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import content from '../content.json';
 
 const { journal: J, maps } = content;
@@ -138,7 +139,7 @@ function PerformanceSummary({ snaps, startingBalance, riskPct, onBalanceChange, 
 }
 
 // ── Snapshot card ─────────────────────────────────────────────────────────────
-function SnapshotCard({ snap, onDelete, onUpdate }) {
+function SnapshotCard({ snap, onDelete, onUpdate, authHeaders }) {
   const [confirming, setConfirming]   = useState(false);
   const [imgOpen, setImgOpen]         = useState(false);
   const [note, setNote]               = useState(snap.note ?? '');
@@ -148,7 +149,7 @@ function SnapshotCard({ snap, onDelete, onUpdate }) {
     const next = snap.outcome === value ? 'pending' : value;
     await fetch(`/api/snapshots/${snap.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ outcome: next }),
     });
     onUpdate(snap.id, { outcome: next });
@@ -157,7 +158,7 @@ function SnapshotCard({ snap, onDelete, onUpdate }) {
   async function saveNote() {
     await fetch(`/api/snapshots/${snap.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ note }),
     });
     onUpdate(snap.id, { note });
@@ -281,6 +282,7 @@ function SnapshotCard({ snap, onDelete, onUpdate }) {
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 function SnapshotHistory({ pair }) {
+  const { authHeaders } = useAuth();
   const [snaps, setSnaps]               = useState([]);
   const [loading, setLoading]           = useState(false);
   const [startingBalance, setStartingBalance] = useState(10000);
@@ -289,17 +291,19 @@ function SnapshotHistory({ pair }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/snapshots?pair=${encodeURIComponent(pair)}`);
+      const res = await fetch(`/api/snapshots?pair=${encodeURIComponent(pair)}`, {
+        headers: authHeaders(),
+      });
       if (res.ok) setSnaps(await res.json());
     } finally {
       setLoading(false);
     }
-  }, [pair]);
+  }, [pair, authHeaders]);
 
   useEffect(() => { load(); }, [load]);
 
   async function handleDelete(id) {
-    await fetch(`/api/snapshots/${id}`, { method: 'DELETE' });
+    await fetch(`/api/snapshots/${id}`, { method: 'DELETE', headers: authHeaders() });
     setSnaps(prev => prev.filter(s => s.id !== id));
   }
 
@@ -333,7 +337,7 @@ function SnapshotHistory({ pair }) {
       {!loading && snaps.length > 0 && (
         <div className="snapshot-history__list">
           {snaps.map(s => (
-            <SnapshotCard key={s.id} snap={s} onDelete={handleDelete} onUpdate={handleUpdate} />
+            <SnapshotCard key={s.id} snap={s} onDelete={handleDelete} onUpdate={handleUpdate} authHeaders={authHeaders} />
           ))}
         </div>
       )}

@@ -6,14 +6,16 @@ import SetupCard from './SetupCard';
 import OverlayToggles from './OverlayToggles';
 import SnapshotHistory from './SnapshotHistory';
 import TutorialOverlay, { STORAGE_KEY } from './TutorialOverlay';
+import { useAuth } from '../context/AuthContext';
 import { useDashboard } from '../context/useDashboard';
 import { CHECKLIST_STEPS } from '../context/dashboardStore';
 import content from '../content.json';
 
-const { app, nav, controls, tutorial: TU } = content;
+const { app, nav, controls, tutorial: TU, auth: AU } = content;
 
 function DashboardOverview() {
   const { state, dispatch, intervals } = useDashboard();
+  const { user, logout } = useAuth();
   const screenshotRef = useRef(null);
   const currentStepDef = CHECKLIST_STEPS[state.checklist.currentStep];
   const [page, setPage] = useState('analysis');
@@ -70,6 +72,17 @@ function DashboardOverview() {
         >
           {TU.helpButton}
         </button>
+
+        <div className="dashboard__user">
+          <span className="dashboard__user-name">{user?.display_name}</span>
+          <button
+            className="dashboard__logout-btn"
+            onClick={logout}
+            title={AU.logoutTitle}
+          >
+            {AU.logoutLabel}
+          </button>
+        </div>
       </header>
 
       {page === 'analysis' && (

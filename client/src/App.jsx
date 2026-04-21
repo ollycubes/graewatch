@@ -1,8 +1,12 @@
 import { useState, useCallback } from 'react';
 import DashboardOverview from './components/DashboardOverview';
 import IntroScreen from './components/IntroScreen';
+import AuthScreen from './components/AuthScreen';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-function App() {
+function AppContent() {
+  const { user, loading } = useAuth();
+
   // Gates whether the dashboard is visible yet.
   // Starts false so the intro plays first; flips to true when the intro ends or is skipped.
   const [introComplete, setIntroComplete] = useState(false);
@@ -13,6 +17,12 @@ function App() {
   const handleIntroFinish = useCallback(() => {
     setIntroComplete(true);
   }, []);
+
+  // While checking for an existing session, show nothing
+  if (loading) return null;
+
+  // Not authenticated — show login/register
+  if (!user) return <AuthScreen />;
 
   return (
     <>
@@ -27,6 +37,14 @@ function App() {
         <DashboardOverview />
       </main>
     </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
