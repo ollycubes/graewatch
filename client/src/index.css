@@ -2059,6 +2059,17 @@ body {
   border-color: rgba(150, 126, 118, 0.7);
 }
 
+/* ── Tutorial scroll-lock ─────────────────────────────────────────────────── */
+/* When the tutorial is active, ALL scrollable containers are frozen so the   */
+/* spotlight cutout never drifts away from its target element.                */
+body.tutorial-open,
+body.tutorial-open .checklist-sidebar,
+body.tutorial-open .checklist-sidebar__steps,
+body.tutorial-open .setup-overlay,
+body.tutorial-open [style*="overflow"] {
+  overflow: hidden !important;
+}
+
 /* ── Tutorial Overlay ─────────────────────────────────────────────────────── */
 .tutorial-overlay {
   position: fixed;

@@ -41,17 +41,27 @@ function TutorialOverlay({ active, onClose }) {
     }
   }, [step, active]);
 
+  // Lock ALL scrolling while the tutorial is open so the spotlight never drifts.
+  // Must target both <html> and <body> — CSS class alone doesn't stop the root.
+  useEffect(() => {
+    if (active) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, [active]);
+
+  // Measure on mount/step change and on window resize.
   useEffect(() => {
     measure();
     window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
-    return () => {
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('scroll', measure, true);
-    };
+    return () => window.removeEventListener('resize', measure);
   }, [measure]);
 
-  // Re-measure after a short delay to let layout settle (e.g. after intro exit)
+  // Re-measure after a short delay to let layout settle (e.g. after step change).
   useEffect(() => {
     if (!active) return;
     const t = setTimeout(measure, 120);
@@ -94,39 +104,63 @@ function TutorialOverlay({ active, onClose }) {
   const { position } = TOUR_STEPS[step];
   const pad = 8; // padding around the spotlight cutout
 
-  // Compute tooltip position relative to the spotlight rect
+  // Compute tooltip position relative to the spotlight rect.
+  // All edges are clamped so the tooltip can never leave the viewport.
   function tooltipStyle() {
     if (!rect) return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
-    const style = {};
     const tooltipWidth = 320;
+    const tooltipHeight = 200; // conservative estimate
     const tooltipGap = 14;
+    const margin = 12; // min distance from any viewport edge
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let top, left, transform;
 
     if (position === 'bottom') {
-      style.top = rect.top + rect.height + pad + tooltipGap;
-      style.left = rect.left + rect.width / 2;
-      style.transform = 'translateX(-50%)';
+      top = rect.top + rect.height + pad + tooltipGap;
+      left = rect.left + rect.width / 2;
+      transform = 'translateX(-50%)';
     } else if (position === 'top') {
-      style.top = rect.top - pad - tooltipGap;
-      style.left = rect.left + rect.width / 2;
-      style.transform = 'translate(-50%, -100%)';
+      top = rect.top - pad - tooltipGap;
+      left = rect.left + rect.width / 2;
+      transform = 'translate(-50%, -100%)';
     } else if (position === 'right') {
-      style.top = rect.top + rect.height / 2;
-      style.left = rect.left + rect.width + pad + tooltipGap;
-      style.transform = 'translateY(-50%)';
+      top = rect.top + rect.height / 2;
+      left = rect.left + rect.width + pad + tooltipGap;
+      transform = 'translateY(-50%)';
     } else {
-      style.top = rect.top + rect.height / 2;
-      style.left = rect.left - pad - tooltipGap;
-      style.transform = 'translate(-100%, -50%)';
+      top = rect.top + rect.height / 2;
+      left = rect.left - pad - tooltipGap;
+      transform = 'translate(-100%, -50%)';
     }
 
-    // Clamp to viewport
-    if (style.left - tooltipWidth / 2 < 16) {
-      style.left = 16;
-      style.transform = style.transform.replace('translateX(-50%)', '').replace('translate(-50%,', 'translate(0,');
+    // Clamp horizontally
+    const clampedLeft = Math.min(
+      Math.max(left - tooltipWidth / 2, margin),
+      vw - tooltipWidth - margin
+    );
+    if (clampedLeft !== left - tooltipWidth / 2) {
+      left = clampedLeft;
+      transform = transform
+        .replace('translateX(-50%)', '')
+        .replace('translate(-50%,', 'translate(0,')
+        .replace('translate(-100%, -50%)', 'translateY(-50%)');
     }
 
-    return style;
+    // Clamp vertically — if tooltip would go below viewport, flip it above the target
+    if (position === 'bottom' && top + tooltipHeight > vh - margin) {
+      top = rect.top - pad - tooltipGap - tooltipHeight;
+    }
+    // If tooltip would go above viewport, flip below
+    if (position === 'top' && top - tooltipHeight < margin) {
+      top = rect.top + rect.height + pad + tooltipGap;
+    }
+    // Final vertical clamp: never let it escape the screen edges
+    top = Math.min(Math.max(top, margin), vh - tooltipHeight - margin);
+
+    return { top, left, transform };
   }
 
   // SVG mask: full-screen dark overlay with a rectangular cutout for the spotlight
