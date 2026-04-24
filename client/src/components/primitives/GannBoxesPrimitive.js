@@ -12,10 +12,10 @@
  */
 
 const COLORS = {
-  fill:    'rgba(150, 150, 150, 0.06)',
-  border:  'rgba(150, 150, 150, 0.5)',
+  fill: 'rgba(150, 150, 150, 0.06)',
+  border: 'rgba(150, 150, 150, 0.5)',
   midline: 'rgba(150, 150, 150, 0.4)',
-  label:   'rgba(120, 120, 120, 0.75)',
+  label: 'rgba(120, 120, 120, 0.75)',
 };
 
 class GannBoxesRenderer {
@@ -93,7 +93,7 @@ class GannBoxesPaneView {
       } else if (src._endTime != null) {
         x2 = timeScale.timeToCoordinate(src._endTime);
       }
-      
+
       if (x2 == null) {
         x2 = visibleRange ? timeScale.logicalToCoordinate(visibleRange.to) : x1 + 200;
       }
@@ -102,9 +102,9 @@ class GannBoxesPaneView {
       boxes.push({
         x1,
         x2,
-        yTop:    Math.min(yTop, yBottom),
+        yTop: Math.min(yTop, yBottom),
         yBottom: Math.max(yTop, yBottom),
-        label:   gann.label ?? null,
+        label: gann.label ?? null,
       });
     }
 

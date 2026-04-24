@@ -93,16 +93,8 @@ function AuthScreen() {
 
           {error && <p className="auth-card__error">{error}</p>}
 
-          <button
-            className="auth-card__submit"
-            type="submit"
-            disabled={submitting}
-          >
-            {submitting
-              ? A.submittingLabel
-              : mode === 'login'
-                ? A.loginLabel
-                : A.registerLabel}
+          <button className="auth-card__submit" type="submit" disabled={submitting}>
+            {submitting ? A.submittingLabel : mode === 'login' ? A.loginLabel : A.registerLabel}
           </button>
         </form>
 

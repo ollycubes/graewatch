@@ -48,7 +48,9 @@ function ChecklistSidebar() {
         </div>
       )}
 
-      <div className={`checklist-sidebar__steps${!hasSelection ? ' checklist-sidebar__steps--locked' : ''}`}>
+      <div
+        className={`checklist-sidebar__steps${!hasSelection ? ' checklist-sidebar__steps--locked' : ''}`}
+      >
         {CHECKLIST_STEPS.map((step) => {
           const isCompleted = completedSteps.includes(step.id);
           const isActive = step.id === currentStep;

@@ -153,17 +153,30 @@ function deriveGannFromBos(normalizedBosSignals, bias) {
   return normalizedBosSignals
     .filter((s) => !bias || s.direction === bias)
     .map((s) => ({
-      start_timestamp: s.swing_timestamp,   // already chart-time number
-      end_timestamp:   null,                // extend to visible right edge
-      high_price:      Math.max(s.price, s.swing_ref),
-      low_price:       Math.min(s.price, s.swing_ref),
-      direction:       s.direction,
-      label:           'D',                // "Daily BOS" source marker
+      start_timestamp: s.swing_timestamp, // already chart-time number
+      end_timestamp: null, // extend to visible right edge
+      high_price: Math.max(s.price, s.swing_ref),
+      low_price: Math.min(s.price, s.swing_ref),
+      direction: s.direction,
+      label: 'D', // "Daily BOS" source marker
     }))
     .filter((s) => s.start_timestamp != null);
 }
 
-function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, showLiq, showWyckoff, selection, onSelectionChange, toolbarExtras, onScreenshotRef }) {
+function CandlestickChart({
+  pair,
+  interval,
+  showBOS,
+  showFVG,
+  showGann,
+  showOB,
+  showLiq,
+  showWyckoff,
+  selection,
+  onSelectionChange,
+  toolbarExtras,
+  onScreenshotRef,
+}) {
   const [error, setError] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
   const chartContainerRef = useRef(null);
@@ -186,7 +199,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
   const liqDataRef = useRef([]);
   const wyckoffDataRef = useRef([]);
   const htfBiasRef = useRef(null);
-  const htfBosDataRef = useRef([]);   // daily BOS signals (pre-normalized) for 4H Gann derivation
+  const htfBosDataRef = useRef([]); // daily BOS signals (pre-normalized) for 4H Gann derivation
   const intervalRef = useRef(interval); // kept in sync so Gann toggle can read current interval
   const requestVersionRef = useRef(0);
   const showBOSRef = useRef(showBOS);
@@ -328,7 +341,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
 
     async function fetchData() {
       setError('');
-      
+
       if (bosPrimitiveRef.current) {
         bosDataRef.current = [];
         bosPrimitiveRef.current.setLines([]);
@@ -591,9 +604,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           if (gannPrimitiveRef.current) {
             // On 4H: show Gann boxes derived from Daily BOS (confluence-anchored).
             // On all other intervals: show the native Gann boxes for that TF.
-            const gannBoxes = (interval === '4h' && htfBosDataRef.current.length > 0)
-              ? deriveGannFromBos(htfBosDataRef.current, bias)
-              : filterByBias(gannDataRef.current, bias);
+            const gannBoxes =
+              interval === '4h' && htfBosDataRef.current.length > 0
+                ? deriveGannFromBos(htfBosDataRef.current, bias)
+                : filterByBias(gannDataRef.current, bias);
             gannPrimitiveRef.current.setBoxes(showGannRef.current ? gannBoxes : []);
           }
           if (obPrimitiveRef.current) {
@@ -618,14 +632,26 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
           if (selection && rangeParams) {
             try {
               const [setupRes, zonesRes] = await Promise.allSettled([
-                fetch(`/api/setup?pair=${pair}&interval=15min${rangeParams}`, { signal: abortController.signal }),
-                fetch(`/api/confluence?pair=${pair}&interval=15min${rangeParams}`, { signal: abortController.signal }),
+                fetch(`/api/setup?pair=${pair}&interval=15min${rangeParams}`, {
+                  signal: abortController.signal,
+                }),
+                fetch(`/api/confluence?pair=${pair}&interval=15min${rangeParams}`, {
+                  signal: abortController.signal,
+                }),
               ]);
-              if (setupRes.status === 'fulfilled' && setupRes.value.ok && setupPrimitiveRef.current) {
+              if (
+                setupRes.status === 'fulfilled' &&
+                setupRes.value.ok &&
+                setupPrimitiveRef.current
+              ) {
                 const setupData = await setupRes.value.json();
                 setupPrimitiveRef.current.setSetup(setupData);
               }
-              if (zonesRes.status === 'fulfilled' && zonesRes.value.ok && zonesPrimitiveRef.current) {
+              if (
+                zonesRes.status === 'fulfilled' &&
+                zonesRes.value.ok &&
+                zonesPrimitiveRef.current
+              ) {
                 const confluenceData = await zonesRes.value.json();
                 const top3 = normalizeZoneSignals((confluenceData.zones || []).slice(0, 3));
                 zonesPrimitiveRef.current.setZones(top3);
@@ -674,9 +700,10 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
 
   useEffect(() => {
     if (gannPrimitiveRef.current) {
-      const gannBoxes = (intervalRef.current === '4h' && htfBosDataRef.current.length > 0)
-        ? deriveGannFromBos(htfBosDataRef.current, htfBiasRef.current)
-        : filterByBias(gannDataRef.current, htfBiasRef.current);
+      const gannBoxes =
+        intervalRef.current === '4h' && htfBosDataRef.current.length > 0
+          ? deriveGannFromBos(htfBosDataRef.current, htfBiasRef.current)
+          : filterByBias(gannDataRef.current, htfBiasRef.current);
       gannPrimitiveRef.current.setBoxes(showGann ? gannBoxes : []);
     }
   }, [showGann]);
@@ -734,85 +761,94 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
     return y < midY ? Math.max(...allHighs) : Math.min(...allLows);
   }, []);
 
-  const handleMouseDown = useCallback((e) => {
-    if (!isSelecting || !chartRef.current || !seriesRef.current) return;
-    const rect = chartContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    isDraggingRef.current = true;
-    dragStartRef.current = { x, y };
-  }, [isSelecting]);
+  const handleMouseDown = useCallback(
+    (e) => {
+      if (!isSelecting || !chartRef.current || !seriesRef.current) return;
+      const rect = chartContainerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      isDraggingRef.current = true;
+      dragStartRef.current = { x, y };
+    },
+    [isSelecting],
+  );
 
-  const handleMouseMove = useCallback((e) => {
-    if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
-    const rect = chartContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const start = dragStartRef.current;
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
+      const rect = chartContainerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const start = dragStartRef.current;
 
-    const timeScale = chartRef.current.timeScale();
-    const series = seriesRef.current;
+      const timeScale = chartRef.current.timeScale();
+      const series = seriesRef.current;
 
-    const t1 = clampTime(timeScale.coordinateToTime(start.x), start.x);
-    const t2 = clampTime(timeScale.coordinateToTime(x), x);
-    const p1 = clampPrice(series.coordinateToPrice(start.y), start.y);
-    const p2 = clampPrice(series.coordinateToPrice(y), y);
+      const t1 = clampTime(timeScale.coordinateToTime(start.x), start.x);
+      const t2 = clampTime(timeScale.coordinateToTime(x), x);
+      const p1 = clampPrice(series.coordinateToPrice(start.y), start.y);
+      const p2 = clampPrice(series.coordinateToPrice(y), y);
 
-    if (t1 != null && t2 != null && p1 != null && p2 != null) {
-      selectionPrimitiveRef.current?.setSelection({
-        startTime: Math.min(t1, t2),
-        endTime: Math.max(t1, t2),
-        highPrice: Math.max(p1, p2),
-        lowPrice: Math.min(p1, p2),
-        candleCount: null, // computed on mouseup
-      });
-    }
-  }, [clampTime, clampPrice]);
-
-  const handleMouseUp = useCallback((e) => {
-    if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
-    isDraggingRef.current = false;
-    const rect = chartContainerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const start = dragStartRef.current;
-
-    const timeScale = chartRef.current.timeScale();
-    const series = seriesRef.current;
-
-    const t1 = clampTime(timeScale.coordinateToTime(start.x), start.x);
-    const t2 = clampTime(timeScale.coordinateToTime(x), x);
-    const p1 = clampPrice(series.coordinateToPrice(start.y), start.y);
-    const p2 = clampPrice(series.coordinateToPrice(y), y);
-
-    if (t1 != null && t2 != null && p1 != null && p2 != null) {
-      const startTime = Math.min(t1, t2);
-      const endTime = Math.max(t1, t2);
-
-      // Count candles within the time range
-      const candlesInRange = candleDataRef.current.filter(
-        (c) => c.time >= startTime && c.time <= endTime,
-      );
-
-      selectionPrimitiveRef.current?.setSelection({
-        startTime,
-        endTime,
-        highPrice: Math.max(p1, p2),
-        lowPrice: Math.min(p1, p2),
-        candleCount: candlesInRange.length,
-      });
-
-      // Convert timestamps to ISO strings for the backend
-      const startDate = new Date(startTime * 1000).toISOString().slice(0, 19).replace('T', ' ');
-      const endDate = new Date(endTime * 1000).toISOString().slice(0, 19).replace('T', ' ');
-
-      if (onSelectionChange) {
-        onSelectionChange({ start: startDate, end: endDate });
+      if (t1 != null && t2 != null && p1 != null && p2 != null) {
+        selectionPrimitiveRef.current?.setSelection({
+          startTime: Math.min(t1, t2),
+          endTime: Math.max(t1, t2),
+          highPrice: Math.max(p1, p2),
+          lowPrice: Math.min(p1, p2),
+          candleCount: null, // computed on mouseup
+        });
       }
-    }
+    },
+    [clampTime, clampPrice],
+  );
 
-    setIsSelecting(false);
-  }, [onSelectionChange, clampTime, clampPrice]);
+  const handleMouseUp = useCallback(
+    (e) => {
+      if (!isDraggingRef.current || !chartRef.current || !seriesRef.current) return;
+      isDraggingRef.current = false;
+      const rect = chartContainerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const start = dragStartRef.current;
+
+      const timeScale = chartRef.current.timeScale();
+      const series = seriesRef.current;
+
+      const t1 = clampTime(timeScale.coordinateToTime(start.x), start.x);
+      const t2 = clampTime(timeScale.coordinateToTime(x), x);
+      const p1 = clampPrice(series.coordinateToPrice(start.y), start.y);
+      const p2 = clampPrice(series.coordinateToPrice(y), y);
+
+      if (t1 != null && t2 != null && p1 != null && p2 != null) {
+        const startTime = Math.min(t1, t2);
+        const endTime = Math.max(t1, t2);
+
+        // Count candles within the time range
+        const candlesInRange = candleDataRef.current.filter(
+          (c) => c.time >= startTime && c.time <= endTime,
+        );
+
+        selectionPrimitiveRef.current?.setSelection({
+          startTime,
+          endTime,
+          highPrice: Math.max(p1, p2),
+          lowPrice: Math.min(p1, p2),
+          candleCount: candlesInRange.length,
+        });
+
+        // Convert timestamps to ISO strings for the backend
+        const startDate = new Date(startTime * 1000).toISOString().slice(0, 19).replace('T', ' ');
+        const endDate = new Date(endTime * 1000).toISOString().slice(0, 19).replace('T', ' ');
+
+        if (onSelectionChange) {
+          onSelectionChange({ start: startDate, end: endDate });
+        }
+      }
+
+      setIsSelecting(false);
+    },
+    [onSelectionChange, clampTime, clampPrice],
+  );
 
   // Attach/detach mouse listeners when selection mode changes
   useEffect(() => {
@@ -896,11 +932,7 @@ function CandlestickChart({ pair, interval, showBOS, showFVG, showGann, showOB, 
             <span className="chart-toolbar__label">{CHART.selectionActive}</span>
           </>
         )}
-        {toolbarExtras && (
-          <div className="chart-toolbar__extras">
-            {toolbarExtras}
-          </div>
-        )}
+        {toolbarExtras && <div className="chart-toolbar__extras">{toolbarExtras}</div>}
       </div>
     </div>
   );

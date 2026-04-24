@@ -113,7 +113,9 @@ body {
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   white-space: nowrap;
 }
 
@@ -378,8 +380,13 @@ body {
 }
 
 @keyframes step-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(212, 160, 84, 0.25); }
-  50% { box-shadow: 0 0 0 6px rgba(212, 160, 84, 0.1); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(212, 160, 84, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(212, 160, 84, 0.1);
+  }
 }
 
 .checklist-step__title-group {
@@ -518,7 +525,7 @@ body {
   padding: 12px 14px;
   border-radius: 10px;
   background: rgba(150, 126, 118, 0.08);
-  border: 1px dashed rgba(150, 126, 118, 0.30);
+  border: 1px dashed rgba(150, 126, 118, 0.3);
   text-align: center;
 }
 
@@ -593,7 +600,9 @@ body {
 
 .setup-card--clickable {
   cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .setup-card--clickable:hover {
@@ -623,8 +632,12 @@ body {
 }
 
 @keyframes overlay-fadein {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .setup-overlay {
@@ -640,8 +653,14 @@ body {
 }
 
 @keyframes overlay-slidein {
-  from { transform: translateY(8px); opacity: 0; }
-  to   { transform: translateY(0);   opacity: 1; }
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .setup-overlay__header {
@@ -679,7 +698,9 @@ body {
   padding: 4px 8px;
   border-radius: 6px;
   opacity: 0.6;
-  transition: opacity 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
 }
 
 .setup-overlay__close:hover {
@@ -1223,7 +1244,6 @@ body {
   .dashboard__content {
     flex-direction: column;
   }
-
 }
 
 /* ── Prediction Bar (above chart) ── */
@@ -1511,7 +1531,7 @@ body {
 .bias-chain__item {
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.70rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
@@ -1540,7 +1560,10 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 .setup-card__save:hover:not(:disabled) {
   background: rgba(150, 126, 118, 0.12);
@@ -1651,7 +1674,9 @@ body {
   color: var(--text-muted);
   padding: 2px 5px;
   border-radius: 4px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .snapshot-card__delete:hover {
   background: rgba(231, 76, 60, 0.1);
@@ -1730,7 +1755,9 @@ body {
   font-weight: 600;
   color: var(--text-muted);
   padding: 2px 7px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .snapshot-card__toggle-img:hover {
   background: rgba(150, 126, 118, 0.1);
@@ -1863,7 +1890,10 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 }
 
 .snapshot-card__outcome-btn:hover {
@@ -1883,10 +1913,18 @@ body {
 }
 
 /* Card left-border accent by outcome */
-.snapshot-card--win      { border-left: 3px solid #2ecc71; }
-.snapshot-card--loss     { border-left: 3px solid #e74c3c; }
-.snapshot-card--breakeven { border-left: 3px solid #f39c12; }
-.snapshot-card--pending  { border-left: 3px solid rgba(150, 126, 118, 0.3); }
+.snapshot-card--win {
+  border-left: 3px solid #2ecc71;
+}
+.snapshot-card--loss {
+  border-left: 3px solid #e74c3c;
+}
+.snapshot-card--breakeven {
+  border-left: 3px solid #f39c12;
+}
+.snapshot-card--pending {
+  border-left: 3px solid rgba(150, 126, 118, 0.3);
+}
 
 /* ── Note row ──────────────────────────────────────────────────────────────── */
 .snapshot-card__note-row {
@@ -1941,8 +1979,14 @@ body {
   transition: background 0.12s;
 }
 
-.snapshot-card__note-save:hover  { background: rgba(46, 204, 113, 0.1); color: #2ecc71; }
-.snapshot-card__note-cancel:hover { background: rgba(150, 126, 118, 0.08); color: var(--text-primary); }
+.snapshot-card__note-save:hover {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+.snapshot-card__note-cancel:hover {
+  background: rgba(150, 126, 118, 0.08);
+  color: var(--text-primary);
+}
 
 /* ── Confidence Indicator ──────────────────────────────────────────────────── */
 .conf-pill {
@@ -2049,7 +2093,10 @@ body {
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
   flex-shrink: 0;
 }
 
@@ -2066,7 +2113,7 @@ body.tutorial-open,
 body.tutorial-open .checklist-sidebar,
 body.tutorial-open .checklist-sidebar__steps,
 body.tutorial-open .setup-overlay,
-body.tutorial-open [style*="overflow"] {
+body.tutorial-open [style*='overflow'] {
   overflow: hidden !important;
 }
 
@@ -2106,8 +2153,14 @@ svg.tutorial-overlay__mask {
 }
 
 @keyframes tutorial-fadein {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tutorial-tooltip__header {
@@ -2150,7 +2203,10 @@ svg.tutorial-overlay__mask {
   font-weight: 600;
   cursor: pointer;
   border: 1px solid rgba(215, 192, 174, 0.25);
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .tutorial-tooltip__btn--next {
@@ -2193,8 +2249,7 @@ svg.tutorial-overlay__mask {
   justify-content: center;
   background:
     radial-gradient(circle at 10% 12%, rgba(183, 196, 207, 0.48), transparent 34%),
-    radial-gradient(circle at 88% 5%, rgba(238, 227, 203, 0.7), transparent 26%),
-    #f4efe6;
+    radial-gradient(circle at 88% 5%, rgba(238, 227, 203, 0.7), transparent 26%), #f4efe6;
   padding: 24px;
 }
 
@@ -2210,8 +2265,14 @@ svg.tutorial-overlay__mask {
 }
 
 @keyframes auth-fadein {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-card__header {
@@ -2262,7 +2323,9 @@ svg.tutorial-overlay__mask {
   font-size: 0.88rem;
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .auth-card__input:focus {
@@ -2292,7 +2355,9 @@ svg.tutorial-overlay__mask {
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition:
+    background 0.2s,
+    transform 0.1s;
   margin-top: 4px;
 }
 
@@ -2359,7 +2424,10 @@ svg.tutorial-overlay__mask {
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .dashboard__logout-btn:hover {

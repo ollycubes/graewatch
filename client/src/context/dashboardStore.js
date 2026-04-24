@@ -13,8 +13,8 @@ export const HTF_MAP = {
   '15min': '1h',
   '1h': '4h',
   '4h': 'daily',
-  'daily': 'weekly',
-  'weekly': null,
+  daily: 'weekly',
+  weekly: null,
 };
 
 // ── Step definitions matching the SMC checklist ──────────────────────────
@@ -33,9 +33,21 @@ export const CHECKLIST_STEPS = [
     interval: 'weekly',
     overlays: { bos: false, fvg: true, gann: false, orderblocks: true, liquidity: false },
     items: [
-      { key: 'w_momentum', label: 'Read the last 2 weekly candles to gauge where momentum is moving', required: true },
-      { key: 'w_fvg', label: 'Mark any unfilled FVGs that could act as a magnet for price', required: true },
-      { key: 'w_ob', label: 'Note whether price is moving into, or reacting off, significant order blocks', required: true },
+      {
+        key: 'w_momentum',
+        label: 'Read the last 2 weekly candles to gauge where momentum is moving',
+        required: true,
+      },
+      {
+        key: 'w_fvg',
+        label: 'Mark any unfilled FVGs that could act as a magnet for price',
+        required: true,
+      },
+      {
+        key: 'w_ob',
+        label: 'Note whether price is moving into, or reacting off, significant order blocks',
+        required: true,
+      },
     ],
     requiredCount: 3,
   },
@@ -46,8 +58,18 @@ export const CHECKLIST_STEPS = [
     interval: 'daily',
     overlays: { bos: true, fvg: false, gann: false, orderblocks: true, liquidity: true },
     items: [
-      { key: 'd_bos', label: 'Mark the last 3+ breaks of structure, most recent first, labelling both the swing that caused each BOS and the swing that was broken', required: true },
-      { key: 'd_ob', label: 'Mark daily order blocks, giving particular weight to bearish OBs sitting above liquidity and bullish OBs below liquidity', required: true },
+      {
+        key: 'd_bos',
+        label:
+          'Mark the last 3+ breaks of structure, most recent first, labelling both the swing that caused each BOS and the swing that was broken',
+        required: true,
+      },
+      {
+        key: 'd_ob',
+        label:
+          'Mark daily order blocks, giving particular weight to bearish OBs sitting above liquidity and bullish OBs below liquidity',
+        required: true,
+      },
     ],
     requiredCount: 2,
   },
@@ -58,10 +80,30 @@ export const CHECKLIST_STEPS = [
     interval: '4h',
     overlays: { bos: true, fvg: true, gann: true, orderblocks: true, liquidity: true },
     items: [
-      { key: 'h4_orderflow', label: 'Check that 4H orderflow aligns with the daily bias — or that a 4H CHoCH is about to bring it into alignment', required: true },
-      { key: 'h4_gann', label: 'Anchor the Gannbox from the swing that caused the most recent daily BOS to the swing that was broken', required: true },
-      { key: 'h4_poi_gann', label: 'A valid POI sits inside the Gannbox in a premium or discount zone where price can react off an FVG or OB', required: true },
-      { key: 'h4_liq', label: 'Confluence is stronger when liquidity sits around or beyond the POI, acting as fuel for the reaction', required: false },
+      {
+        key: 'h4_orderflow',
+        label:
+          'Check that 4H orderflow aligns with the daily bias — or that a 4H CHoCH is about to bring it into alignment',
+        required: true,
+      },
+      {
+        key: 'h4_gann',
+        label:
+          'Anchor the Gannbox from the swing that caused the most recent daily BOS to the swing that was broken',
+        required: true,
+      },
+      {
+        key: 'h4_poi_gann',
+        label:
+          'A valid POI sits inside the Gannbox in a premium or discount zone where price can react off an FVG or OB',
+        required: true,
+      },
+      {
+        key: 'h4_liq',
+        label:
+          'Confluence is stronger when liquidity sits around or beyond the POI, acting as fuel for the reaction',
+        required: false,
+      },
     ],
     requiredCount: 3,
   },
@@ -73,9 +115,22 @@ export const CHECKLIST_STEPS = [
     overlays: { bos: true, fvg: true, gann: true, orderblocks: true, liquidity: true },
     items: [
       { key: 'h1_entered', label: 'Confirm price has entered the POI zone', required: true },
-      { key: 'h1_volume', label: 'Look for increasing volume into the zone — bars stepping up like a rising pyramid on the chart', required: true },
-      { key: 'h1_reject', label: 'Reject the entry if price closes well beyond the zone', required: false },
-      { key: 'h1_hover', label: 'Keep the setup live while price is hovering within the zone', required: false },
+      {
+        key: 'h1_volume',
+        label:
+          'Look for increasing volume into the zone — bars stepping up like a rising pyramid on the chart',
+        required: true,
+      },
+      {
+        key: 'h1_reject',
+        label: 'Reject the entry if price closes well beyond the zone',
+        required: false,
+      },
+      {
+        key: 'h1_hover',
+        label: 'Keep the setup live while price is hovering within the zone',
+        required: false,
+      },
     ],
     requiredCount: 2,
   },
@@ -84,10 +139,26 @@ export const CHECKLIST_STEPS = [
     title: '15M · 15-Minute',
     subtitle: 'Entry trigger',
     interval: '15min',
-    overlays: { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: true, wyckoff: true },
+    overlays: {
+      bos: false,
+      fvg: false,
+      gann: false,
+      orderblocks: false,
+      liquidity: true,
+      wyckoff: true,
+    },
     items: [
-      { key: 'm15_wyckoff', label: 'Look for Wyckoff structures forming inside the zone — not essential, but a strong bonus when present', required: false },
-      { key: 'm15_sweep', label: 'Look for a liquidity sweep of local 15-minute highs or lows inside the zone', required: true },
+      {
+        key: 'm15_wyckoff',
+        label:
+          'Look for Wyckoff structures forming inside the zone — not essential, but a strong bonus when present',
+        required: false,
+      },
+      {
+        key: 'm15_sweep',
+        label: 'Look for a liquidity sweep of local 15-minute highs or lows inside the zone',
+        required: true,
+      },
     ],
     requiredCount: 1,
   },
@@ -128,8 +199,24 @@ export const initialState = {
 // Derive which overlays should be visible based on the current step only.
 function deriveOverlays(currentStep) {
   const stepDef = CHECKLIST_STEPS[currentStep];
-  if (!stepDef) return { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false, wyckoff: false };
-  return { bos: false, fvg: false, gann: false, orderblocks: false, liquidity: false, wyckoff: false, ...stepDef.overlays };
+  if (!stepDef)
+    return {
+      bos: false,
+      fvg: false,
+      gann: false,
+      orderblocks: false,
+      liquidity: false,
+      wyckoff: false,
+    };
+  return {
+    bos: false,
+    fvg: false,
+    gann: false,
+    orderblocks: false,
+    liquidity: false,
+    wyckoff: false,
+    ...stepDef.overlays,
+  };
 }
 
 // Derive the chart interval from the current step
@@ -193,9 +280,7 @@ export function dashboardReducer(state, action) {
         : [...state.checklist.completedSteps, current];
 
       // Only derive overlays when a selection is active; otherwise keep them off.
-      const newOverlays = state.selection
-        ? deriveOverlays(nextStep)
-        : initialState.overlays;
+      const newOverlays = state.selection ? deriveOverlays(nextStep) : initialState.overlays;
       const newInterval = deriveInterval(nextStep, state.interval);
 
       return {
@@ -219,9 +304,7 @@ export function dashboardReducer(state, action) {
       if (!isAllowed) return state;
 
       // Only derive overlays when a selection is active; otherwise keep them off.
-      const newOverlays = state.selection
-        ? deriveOverlays(targetStep)
-        : initialState.overlays;
+      const newOverlays = state.selection ? deriveOverlays(targetStep) : initialState.overlays;
       const newInterval = deriveInterval(targetStep, state.interval);
 
       return {

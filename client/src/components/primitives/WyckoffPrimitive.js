@@ -134,7 +134,13 @@ class WyckoffPaneView {
       const xMarker = x2;
       const yLevel = series.priceToCoordinate(sig.level);
 
-      if (x1 === null || x2 === null || ySupport === null || yResistance === null || yLevel === null) {
+      if (
+        x1 === null ||
+        x2 === null ||
+        ySupport === null ||
+        yResistance === null ||
+        yLevel === null
+      ) {
         continue;
       }
 

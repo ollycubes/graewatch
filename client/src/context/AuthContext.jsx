@@ -42,7 +42,9 @@ export function AuthProvider({ children }) {
     }
 
     validate();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const login = useCallback(async (email, password) => {
@@ -87,11 +89,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Helper: build headers object with auth token included
-  const authHeaders = useCallback((extra = {}) => {
-    const headers = { ...extra };
-    if (token) headers.Authorization = `Bearer ${token}`;
-    return headers;
-  }, [token]);
+  const authHeaders = useCallback(
+    (extra = {}) => {
+      const headers = { ...extra };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return headers;
+    },
+    [token],
+  );
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, register, logout, authHeaders }}>

@@ -4,13 +4,13 @@ import content from '../content.json';
 const { tutorial: T } = content;
 
 const TOUR_STEPS = [
-  { target: 'pair-selector',  position: 'bottom' },
-  { target: 'interval',       position: 'bottom' },
-  { target: 'chart',          position: 'top'    },
-  { target: 'select-tool',    position: 'top'    },
-  { target: 'checklist',      position: 'right'  },
-  { target: 'setup-card',     position: 'bottom' },
-  { target: 'journal-tab',    position: 'bottom' },
+  { target: 'pair-selector', position: 'bottom' },
+  { target: 'interval', position: 'bottom' },
+  { target: 'chart', position: 'top' },
+  { target: 'select-tool', position: 'top' },
+  { target: 'checklist', position: 'right' },
+  { target: 'setup-card', position: 'bottom' },
+  { target: 'journal-tab', position: 'bottom' },
 ];
 
 const STORAGE_KEY = 'graewatch_tutorial_seen';
@@ -72,9 +72,18 @@ function TutorialOverlay({ active, onClose }) {
   useEffect(() => {
     if (!active) return;
     function onKey(e) {
-      if (e.key === 'Escape') { handleSkip(); return; }
-      if (e.key === 'ArrowRight' || e.key === 'Enter') { handleNext(); return; }
-      if (e.key === 'ArrowLeft') { handleBack(); return; }
+      if (e.key === 'Escape') {
+        handleSkip();
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        handleNext();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        handleBack();
+        return;
+      }
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -139,7 +148,7 @@ function TutorialOverlay({ active, onClose }) {
     // Clamp horizontally
     const clampedLeft = Math.min(
       Math.max(left - tooltipWidth / 2, margin),
-      vw - tooltipWidth - margin
+      vw - tooltipWidth - margin,
     );
     if (clampedLeft !== left - tooltipWidth / 2) {
       left = clampedLeft;
@@ -169,9 +178,7 @@ function TutorialOverlay({ active, onClose }) {
     const h = window.innerHeight;
 
     if (!rect) {
-      return (
-        <div className="tutorial-overlay__mask" />
-      );
+      return <div className="tutorial-overlay__mask" />;
     }
 
     const cx = rect.left - pad;
@@ -189,14 +196,21 @@ function TutorialOverlay({ active, onClose }) {
           </mask>
         </defs>
         <rect
-          x="0" y="0" width={w} height={h}
+          x="0"
+          y="0"
+          width={w}
+          height={h}
           fill="rgba(0,0,0,0.6)"
           mask="url(#tutorial-spotlight-mask)"
         />
         {/* Glow ring around the cutout */}
         <rect
-          x={cx} y={cy} width={cw} height={ch}
-          rx={cr} ry={cr}
+          x={cx}
+          y={cy}
+          width={cw}
+          height={ch}
+          rx={cr}
+          ry={cr}
           fill="none"
           stroke="var(--palette-peach)"
           strokeWidth="2"
@@ -226,14 +240,23 @@ function TutorialOverlay({ active, onClose }) {
 
         <div className="tutorial-tooltip__nav">
           {step > 0 && (
-            <button className="tutorial-tooltip__btn tutorial-tooltip__btn--back" onClick={handleBack}>
+            <button
+              className="tutorial-tooltip__btn tutorial-tooltip__btn--back"
+              onClick={handleBack}
+            >
               {T.backLabel}
             </button>
           )}
-          <button className="tutorial-tooltip__btn tutorial-tooltip__btn--skip" onClick={handleSkip}>
+          <button
+            className="tutorial-tooltip__btn tutorial-tooltip__btn--skip"
+            onClick={handleSkip}
+          >
             {T.skipLabel}
           </button>
-          <button className="tutorial-tooltip__btn tutorial-tooltip__btn--next" onClick={handleNext}>
+          <button
+            className="tutorial-tooltip__btn tutorial-tooltip__btn--next"
+            onClick={handleNext}
+          >
             {step < TOUR_STEPS.length - 1 ? T.nextLabel : T.finishLabel}
           </button>
         </div>

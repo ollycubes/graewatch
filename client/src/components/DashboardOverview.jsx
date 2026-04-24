@@ -75,11 +75,7 @@ function DashboardOverview() {
 
         <div className="dashboard__user">
           <span className="dashboard__user-name">{user?.display_name}</span>
-          <button
-            className="dashboard__logout-btn"
-            onClick={logout}
-            title={AU.logoutTitle}
-          >
+          <button className="dashboard__logout-btn" onClick={logout} title={AU.logoutTitle}>
             {AU.logoutLabel}
           </button>
         </div>
@@ -110,7 +106,8 @@ function DashboardOverview() {
               <div className="dashboard__interval-hint">
                 {currentStepDef?.interval && (
                   <span className="interval-hint">
-                    <span className="icon">📊</span> {controls.viewing} {currentStepDef.interval.toUpperCase()}
+                    <span className="icon">📊</span> {controls.viewing}{' '}
+                    {currentStepDef.interval.toUpperCase()}
                   </span>
                 )}
               </div>

@@ -7,9 +7,9 @@
  */
 
 const FILL_ALPHA = [0.28, 0.18, 0.12];
-const BORDER_ALPHA = [0.85, 0.60, 0.40];
-const BASE_FILL = '214, 160, 50';    // amber
-const BASE_BORDER = '180, 120, 20';  // dark amber
+const BORDER_ALPHA = [0.85, 0.6, 0.4];
+const BASE_FILL = '214, 160, 50'; // amber
+const BASE_BORDER = '180, 120, 20'; // dark amber
 
 class ZonesRenderer {
   constructor(boxes) {

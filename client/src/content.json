@@ -164,18 +164,31 @@
     }
   },
   "maps": {
-    "typeLabels": { "ob": "OB", "fvg": "FVG", "swing": "Swing", "wyckoff": "WY", "confluence": "Conf" },
+    "typeLabels": {
+      "ob": "OB",
+      "fvg": "FVG",
+      "swing": "Swing",
+      "wyckoff": "WY",
+      "confluence": "Conf"
+    },
     "tfShort": { "weekly": "W", "daily": "D", "4h": "4H", "1h": "1H", "15min": "15M", "gann": "G" },
     "biasArrow": { "bullish": "▲", "bearish": "▼", "neutral": "—" },
     "biasLabel": { "bullish": "▲ Bullish", "bearish": "▼ Bearish", "neutral": "— Neutral" },
     "sourceLabel": { "ob": "OB", "fvg": "FVG", "wyckoff": "WY" },
-    "breakdownLabels": { "type": "Type", "proximity": "Prox", "at_poi": "POI", "liquidity": "Liq", "tf_confluence": "TF", "cluster": "Conf" },
+    "breakdownLabels": {
+      "type": "Type",
+      "proximity": "Prox",
+      "at_poi": "POI",
+      "liquidity": "Liq",
+      "tf_confluence": "TF",
+      "cluster": "Conf"
+    },
     "biasColor": { "bullish": "#2ecc71", "bearish": "#e74c3c", "neutral": "#888" },
     "outcomes": [
-      { "value": "win",       "label": "Win",     "color": "#2ecc71" },
-      { "value": "loss",      "label": "Loss",    "color": "#e74c3c" },
-      { "value": "breakeven", "label": "B/E",     "color": "#f39c12" },
-      { "value": "pending",   "label": "Pending", "color": "#888"    }
+      { "value": "win", "label": "Win", "color": "#2ecc71" },
+      { "value": "loss", "label": "Loss", "color": "#e74c3c" },
+      { "value": "breakeven", "label": "B/E", "color": "#f39c12" },
+      { "value": "pending", "label": "Pending", "color": "#888" }
     ]
   },
   "tutorial": {

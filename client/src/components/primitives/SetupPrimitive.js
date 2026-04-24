@@ -134,12 +134,7 @@ class SetupPaneView {
     const yTarget = series.priceToCoordinate(setup.target);
     const yStop = series.priceToCoordinate(setup.stop);
 
-    if (
-      yEntryTop === null ||
-      yEntryBottom === null ||
-      yTarget === null ||
-      yStop === null
-    ) {
+    if (yEntryTop === null || yEntryBottom === null || yTarget === null || yStop === null) {
       return null;
     }
 

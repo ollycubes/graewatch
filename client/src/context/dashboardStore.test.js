@@ -202,8 +202,8 @@ describe('ADVANCE_STEP', () => {
     const state = dashboardReducer(ready, { type: 'ADVANCE_STEP' });
     // Step 0 enables fvg and orderblocks; step 1 also enables bos, orderblocks, liquidity
     // After advancing, merged overlays from steps 0 and 1 should both be reflected
-    expect(state.overlays.fvg).toBe(true);   // from step 0
-    expect(state.overlays.bos).toBe(true);   // from step 1
+    expect(state.overlays.fvg).toBe(true); // from step 0
+    expect(state.overlays.bos).toBe(true); // from step 1
   });
 });
 
