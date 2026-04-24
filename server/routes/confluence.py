@@ -26,15 +26,6 @@ router = APIRouter()
 
 db: AsyncIOMotorDatabase | None = None
 
-# Same map as setup.py and dashboardStore.js
-HTF_MAP = {
-    "15min": "1h",
-    "1h": "4h",
-    "4h": "daily",
-    "daily": "weekly",
-    "weekly": None,
-}
-
 
 async def _fetch_candles(
     col,

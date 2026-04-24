@@ -16,7 +16,6 @@ graewatch/
 │       │   ├── IntroScreen.jsx
 │       │   ├── SetupCard.jsx
 │       │   ├── SnapshotHistory.jsx
-│       │   ├── SummaryPanel.jsx
 │       │   └── ...
 │       ├── context/         # Dashboard state management (useReducer)
 │       └── content.json     # Externalised UI strings

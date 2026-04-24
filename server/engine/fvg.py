@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Fair Value Gaps (FVG) — three-candle gap patterns.

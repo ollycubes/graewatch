@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 def detect(candles: list[dict]) -> list[dict]:  # pyright: ignore
     """
     Detect Gann box zones by pairing consecutive swing highs and swing lows.
