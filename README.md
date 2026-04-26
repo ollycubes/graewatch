@@ -1,64 +1,14 @@
 # Graewatch
 
-A forex market structure analysis dashboard built around Smart Money Concepts (SMC). Graewatch fetches historical candlestick data, runs eight detection algorithms to identify patterns like Break of Structure, Fair Value Gaps, Order Blocks, and Liquidity Sweeps, then scores confluence zones across multiple timeframes and presents actionable trade setups on an interactive chart.
-
-## Project Structure
-
-```
-graewatch/
-├── client/                  # React frontend (Vite)
-│   └── src/
-│       ├── components/
-│       │   ├── primitives/  # Custom chart overlays (BOS, FVG, OB, etc.)
-│       │   ├── CandlestickChart.jsx
-│       │   ├── ChecklistSidebar.jsx
-│       │   ├── DashboardOverview.jsx
-│       │   ├── IntroScreen.jsx
-│       │   ├── SetupCard.jsx
-│       │   ├── SnapshotHistory.jsx
-│       │   └── ...
-│       ├── context/         # Dashboard state management (useReducer)
-│       └── content.json     # Externalised UI strings
-├── server/                  # Python backend (FastAPI)
-│   ├── routes/              # API endpoints
-│   │   ├── candles.py       # OHLC data fetch & cache
-│   │   ├── analysis.py      # Single-engine analysis
-│   │   ├── setup.py         # Trade setup detection
-│   │   ├── confluence.py    # Multi-TF confluence scoring
-│   │   ├── snapshots.py     # Snapshot CRUD
-│   │   ├── auth.py          # Register / login / current user
-│   │   └── intervals.py     # Interval normalisation helpers
-│   ├── engine/              # Detection algorithms
-│   │   ├── bos.py           # Break of Structure
-│   │   ├── fvg.py           # Fair Value Gaps
-│   │   ├── orderblocks.py   # Order Blocks
-│   │   ├── liquidity.py     # Liquidity sweeps & pools
-│   │   ├── wyckoff.py       # Wyckoff phase detection
-│   │   ├── gann.py          # Gann boxes
-│   │   ├── confluence.py    # Multi-TF confluence engine
-│   │   ├── setup.py         # Entry/Target/Stop/R:R detection
-│   │   ├── zones.py         # Zone detection & scoring
-│   │   └── ...
-│   ├── utils/
-│   │   ├── precision.py     # Decimal ↔ float conversion
-│   │   ├── audit.py         # Logging & performance tracking
-│   │   └── auth.py          # JWT + bcrypt helpers
-│   ├── eval/                # Walk-forward backtest & perf scripts
-│   │   ├── run_backtest.py  # Trade-by-trade evaluation harness
-│   │   └── run_perf.py      # Engine timing benchmarks
-│   └── tests/               # Unit & route tests (pytest)
-└── .env                     # Environment variables (not committed)
-```
+A forex chart analysis dashboard built around Smart Money Concepts (SMC). It pulls candlestick data, runs a set of pattern detectors (Break of Structure, Fair Value Gaps, Order Blocks, Liquidity Sweeps, Wyckoff, Gann), scores confluence across timeframes, and presents trade setups on an interactive chart.
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19, Vite, [lightweight-charts](https://github.com/tradingview/lightweight-charts) (TradingView) |
-| Backend | FastAPI, Motor (async MongoDB driver), HTTPX |
-| Database | MongoDB |
-| Auth | JWT (PyJWT) + bcrypt password hashing |
-| Data Source | [TwelveData API](https://twelvedata.com/) |
+- **Frontend** — React 19, Vite, [lightweight-charts](https://github.com/tradingview/lightweight-charts)
+- **Backend** — FastAPI, Motor (async MongoDB), HTTPX
+- **Database** — MongoDB
+- **Auth** — JWT + bcrypt
+- **Data** — [TwelveData API](https://twelvedata.com/)
 
 ## Getting Started
 
@@ -66,40 +16,40 @@ graewatch/
 
 - Python 3.10+
 - Node.js 18+
-- MongoDB running locally or a cloud instance (e.g. MongoDB Atlas)
+- MongoDB (local or Atlas)
 - A TwelveData API key (free tier works)
 
 ### Setup
 
-1. Clone the repo and create a `.env` file in the root directory:
+1. Create a `.env` file in the project root:
 
-```
-TWELVE_DATA_API_KEY=your_api_key_here
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=any_long_random_string
-```
+   ```
+   TWELVE_DATA_API_KEY=your_api_key_here
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=any_long_random_string
+   ```
 
 2. Start the backend:
 
-```bash
-cd server
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
+   ```bash
+   cd server
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   uvicorn main:app --reload
+   ```
 
 3. Start the frontend:
 
-```bash
-cd client
-npm install
-npm run dev
-```
+   ```bash
+   cd client
+   npm install
+   npm run dev
+   ```
 
-The frontend runs on `http://localhost:5173` and proxies API requests to the backend on port 8000.
+The frontend runs on `http://localhost:5173` and proxies API calls to the backend on port 8000.
 
-### Running Tests
+### Tests
 
 ```bash
 cd server
@@ -107,91 +57,90 @@ source .venv/bin/activate
 python -m pytest -v
 ```
 
-The pytest suite covers detection engines (BOS, FVG, Gann, Liquidity, Order Blocks, Wyckoff, Setup, Confluence), zone scoring/clustering/adapters, interval normalisation, decimal precision, and the auth + snapshots routes.
+Covers detection engines, zone scoring, interval normalisation, decimal precision, auth, and snapshot routes.
 
-### Evaluation Scripts
+### Evaluation
 
-Reproducible scripts used for the dissertation evaluation chapter live under `server/eval/`:
+Scripts used for the dissertation evaluation chapter:
 
 ```bash
 cd server
-python eval/run_backtest.py                 # walk-forward backtest, JSON + per-trade CSVs
-python eval/run_perf.py                     # per-engine timing benchmarks
+python eval/run_backtest.py   # walk-forward backtest → JSON + per-trade CSVs
+python eval/run_perf.py       # per-engine timing benchmarks
 ```
 
-Outputs are written to `server/eval/results/`.
+Outputs land in `server/eval/results/`.
 
 ## Features
 
 ### Detection Engines
 
-Eight algorithms identify SMC patterns from raw OHLC data:
-
-| Engine | Description |
+| Engine | What it does |
 |---|---|
-| **BOS** | Break of Structure — detects when price breaks past recent swing highs/lows |
-| **FVG** | Fair Value Gaps — highlights price imbalances and tracks when they get filled |
-| **Order Blocks** | Identifies institutional supply/demand zones from strong moves |
-| **Liquidity** | Detects liquidity sweeps (stop hunts) and equal-high/low pools |
-| **Wyckoff** | Phase detection — accumulation/distribution ranges |
-| **Gann** | Gann box overlays for time/price symmetry analysis |
-| **Confluence** | Multi-timeframe zone scoring — ranks zones by cross-TF overlap |
-| **Setup** | Derives Entry POI, Target, Stop Loss, and Risk:Reward from combined signals |
+| **BOS** | Detects breaks past recent swing highs/lows |
+| **FVG** | Highlights price imbalances and tracks fills |
+| **Order Blocks** | Marks institutional supply/demand zones |
+| **Liquidity** | Flags stop hunts and equal-high/low pools |
+| **Wyckoff** | Detects accumulation/distribution phases |
+| **Gann** | Renders Gann time/price boxes |
+| **Confluence** | Scores zones by cross-timeframe overlap |
+| **Setup** | Derives Entry / Target / Stop / R:R |
 
 ### Interactive Chart
 
-- Candlestick rendering via TradingView lightweight-charts
-- 9 custom chart primitives (BOS lines, FVG boxes, OB boxes, Gann boxes, Liquidity lines, Wyckoff markers, Setup levels, Confluence zones, Selection box)
-- Per-indicator overlay toggles
-- Selection tool — draw a time range to scope analysis
+- TradingView lightweight-charts for candlestick rendering
+- 9 custom overlays (BOS, FVG, OB, Gann, Liquidity, Wyckoff, Setup, Confluence, Selection)
+- Per-indicator toggles
+- Selection tool to scope analysis to a time range
 
 ### SMC Checklist
 
-A guided step-by-step workflow that walks through top-down analysis:
-1. Pre-flight — select pair and confirm data is loaded
-2. HTF Bias — check weekly/daily structure
-3. Intermediate Structure — confirm 4H/1H alignment
-4. Entry Timeframe — identify 15min confluence zones
-5. Setup Validation — review entry/target/stop geometry
+A guided top-down workflow:
 
-### Confidence Indicator
+1. Pre-flight — pick a pair, confirm data loaded
+2. HTF bias — check weekly/daily structure
+3. Intermediate structure — 4H / 1H alignment
+4. Entry timeframe — find 15-min confluence
+5. Setup validation — review entry/target/stop geometry
 
-A 0–100 score computed from four weighted factors:
-- Bias chain alignment across timeframes (0–30)
-- Zone quality / conviction score (0–25)
-- Setup validity and R:R quality (0–25)
-- Structural factors: POI proximity, liquidity, clustering (0–20)
+### Confidence Score (0–100)
+
+Weighted across:
+- Bias chain alignment (30)
+- Zone quality (25)
+- Setup validity & R:R (25)
+- Structural factors — POI proximity, liquidity, clustering (20)
 
 ### Simulation Journal
 
-- Save trade setups as snapshots with chart screenshots
+- Save setups as snapshots with chart screenshots
 - Tag outcomes (Win / Loss / Breakeven)
-- Track win rate, average R:R, total R
-- Demo capital simulator with configurable starting balance and risk %
+- Track win rate, avg R:R, total R
+- Demo capital simulator with configurable balance and risk %
 
-### Data & Caching
+### Other
 
-- Candle data cached in MongoDB for 1 hour
-- Analysis results cached until underlying candle data changes
-- Ranged (selection-scoped) queries bypass cache for fresh results
-- Fallback to cached data when TwelveData is unavailable
+- **Caching** — candles cached for 1 hour; analysis cached until candles change; ranged queries bypass cache
+- **Precision** — all engines use `decimal.Decimal`, converted to floats only at the API boundary
+- **Audit logs** — request and engine timings persisted with a 30-day TTL
+- **Auth** — email + password (bcrypt), JWT bearer tokens, per-user snapshot scoping
 
-### Numerical Precision
+## Project Structure
 
-All detection engines use `decimal.Decimal` for calculations. A conversion boundary at the API layer transforms results back to standard floats for JSON serialisation, ensuring zero impact on the frontend.
-
-### Auditing
-
-- HTTP middleware logs every API request duration
-- Engine-level timing for algorithm performance
-- Events persisted to `audit_logs` collection with 30-day TTL
-
-### Authentication
-
-- Email + password registration with bcrypt-hashed credentials
-- JWT bearer tokens issued on login, verified on protected routes (`/api/snapshots`, `/api/auth/me`)
-- Frontend gates the dashboard behind an `AuthScreen` until a valid session is established
-- Per-user snapshots scoped via `user_id` on every read/write
+```
+graewatch/
+├── client/                 # React frontend (Vite)
+│   └── src/
+│       ├── components/     # UI + chart primitives
+│       ├── context/        # Dashboard state (useReducer)
+│       └── content.json    # Externalised UI strings
+└── server/                 # FastAPI backend
+    ├── routes/             # API endpoints
+    ├── engine/             # Detection algorithms
+    ├── utils/              # Precision, audit, auth helpers
+    ├── eval/               # Backtest & perf scripts
+    └── tests/              # pytest suite
+```
 
 ## Architecture
 
@@ -200,46 +149,32 @@ TwelveData API
      │
      ▼
 ┌─────────────────────────────────┐
-│  FastAPI Server                 │
-│                                 │
-│  routes/candles.py  ──► MongoDB │  (cache OHLC + normalise timestamps)
-│                         │       │
-│  routes/analysis.py ◄───┘       │  (fetch candles → Decimal → engine)
-│  routes/setup.py                │
-│  routes/confluence.py           │
-│                                 │
-│  engine/*.py                    │  (all math in Decimal)
-│         │                       │
-│         ▼                       │
-│  convert_to_float() ──► JSON    │  (API boundary)
+│  FastAPI                        │
+│   routes/  ──►  MongoDB cache   │
+│   engine/  (Decimal math)       │
+│   convert_to_float() ──► JSON   │
 └─────────────────────────────────┘
      │
      ▼
 ┌─────────────────────────────────┐
 │  React Dashboard                │
-│                                 │
-│  lightweight-charts             │
-│  + custom primitives            │
-│  + checklist state machine      │
-│  + confidence scoring           │
+│   lightweight-charts            │
+│   + overlays + checklist + UI   │
 └─────────────────────────────────┘
 ```
 
-## API Reference
+## API
 
-See [API.md](API.md) for the complete endpoint reference.
+Full reference in [API.md](API.md).
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/candles` | GET | Fetch/cache OHLC data from TwelveData |
+| `/api/candles` | GET | Fetch/cache OHLC data |
 | `/api/analysis/{component}` | GET | Run a detection engine |
-| `/api/setup` | GET | Detect trade setup (Entry/Target/Stop/R:R) |
-| `/api/confluence` | GET | Multi-TF confluence zone scoring |
-| `/api/snapshots` | GET | List saved snapshots (auth) |
-| `/api/snapshots` | POST | Save a new snapshot (auth) |
-| `/api/snapshots/{id}` | PATCH | Update snapshot outcome/notes (auth) |
-| `/api/snapshots/{id}` | DELETE | Delete a snapshot (auth) |
-| `/api/auth/register` | POST | Create an account, returns JWT |
+| `/api/setup` | GET | Detect trade setup |
+| `/api/confluence` | GET | Multi-TF confluence scoring |
+| `/api/snapshots` | GET / POST / PATCH / DELETE | Snapshot CRUD (auth) |
+| `/api/auth/register` | POST | Create account, returns JWT |
 | `/api/auth/login` | POST | Authenticate, returns JWT |
-| `/api/auth/me` | GET | Current user profile (auth) |
+| `/api/auth/me` | GET | Current user (auth) |
 | `/api/health` | GET | Health check |
