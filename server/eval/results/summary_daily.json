@@ -1,0 +1,139 @@
+{
+  "interval": "daily",
+  "htf_interval": "weekly",
+  "start": "2023-01-01",
+  "end": "2024-12-31",
+  "pairs": {
+    "EUR/USD": {
+      "candles": 521,
+      "bos": {
+        "total": 42,
+        "continuation": 27,
+        "invalidation": 15,
+        "inconclusive": 0,
+        "continuation_rate_decided": 0.6428571428571429,
+        "continuation_rate_all": 0.6428571428571429
+      },
+      "setups": {
+        "total": 171,
+        "closed": 143,
+        "open_or_no_touch": 28,
+        "wins": 100,
+        "losses": 43,
+        "win_rate": 0.6993006993006993,
+        "avg_planned_rr": 2.1483227529731352,
+        "avg_realised_r": 0.9199267684635389,
+        "total_r": 131.54952789028607
+      },
+      "baseline": {
+        "total": 12,
+        "closed": 12,
+        "open_or_no_touch": 0,
+        "wins": 5,
+        "losses": 7,
+        "win_rate": 0.4166666666666667,
+        "avg_planned_rr": 1.0,
+        "avg_realised_r": -0.16666666666666666,
+        "total_r": -2.0
+      }
+    },
+    "GBP/USD": {
+      "candles": 521,
+      "bos": {
+        "total": 38,
+        "continuation": 19,
+        "invalidation": 17,
+        "inconclusive": 2,
+        "continuation_rate_decided": 0.5277777777777778,
+        "continuation_rate_all": 0.5
+      },
+      "setups": {
+        "total": 149,
+        "closed": 106,
+        "open_or_no_touch": 43,
+        "wins": 63,
+        "losses": 43,
+        "win_rate": 0.5943396226415094,
+        "avg_planned_rr": 2.615441605991632,
+        "avg_realised_r": 0.4274270187180384,
+        "total_r": 45.30726398411207
+      },
+      "baseline": {
+        "total": 10,
+        "closed": 10,
+        "open_or_no_touch": 0,
+        "wins": 7,
+        "losses": 3,
+        "win_rate": 0.7,
+        "avg_planned_rr": 1.0,
+        "avg_realised_r": 0.4,
+        "total_r": 4.0
+      }
+    },
+    "USD/JPY": {
+      "candles": 541,
+      "bos": {
+        "total": 38,
+        "continuation": 28,
+        "invalidation": 10,
+        "inconclusive": 0,
+        "continuation_rate_decided": 0.7368421052631579,
+        "continuation_rate_all": 0.7368421052631579
+      },
+      "setups": {
+        "total": 108,
+        "closed": 90,
+        "open_or_no_touch": 18,
+        "wins": 35,
+        "losses": 55,
+        "win_rate": 0.3888888888888889,
+        "avg_planned_rr": 4.136770071832786,
+        "avg_realised_r": 0.0377086510836275,
+        "total_r": 3.3937785975264747
+      },
+      "baseline": {
+        "total": 10,
+        "closed": 9,
+        "open_or_no_touch": 1,
+        "wins": 5,
+        "losses": 4,
+        "win_rate": 0.5555555555555556,
+        "avg_planned_rr": 1.0,
+        "avg_realised_r": 0.1111111111111111,
+        "total_r": 1.0
+      }
+    }
+  },
+  "aggregate": {
+    "bos": {
+      "total": 118,
+      "continuation": 74,
+      "invalidation": 42,
+      "inconclusive": 2,
+      "continuation_rate_decided": 0.6379310344827587,
+      "continuation_rate_all": 0.6271186440677966
+    },
+    "setups": {
+      "total": 428,
+      "closed": 339,
+      "open_or_no_touch": 89,
+      "wins": 198,
+      "losses": 141,
+      "win_rate": 0.584070796460177,
+      "avg_planned_rr": 2.8126989668436906,
+      "avg_realised_r": 0.5317125972623148,
+      "total_r": 180.25057047192473
+    },
+    "baseline": {
+      "total": 32,
+      "closed": 31,
+      "open_or_no_touch": 1,
+      "wins": 17,
+      "losses": 14,
+      "win_rate": 0.5483870967741935,
+      "avg_planned_rr": 1.0,
+      "avg_realised_r": 0.0967741935483871,
+      "total_r": 3.0
+    }
+  }
+}
