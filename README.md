@@ -25,7 +25,9 @@ graewatch/
 │   │   ├── analysis.py      # Single-engine analysis
 │   │   ├── setup.py         # Trade setup detection
 │   │   ├── confluence.py    # Multi-TF confluence scoring
-│   │   └── snapshots.py     # Snapshot CRUD
+│   │   ├── snapshots.py     # Snapshot CRUD
+│   │   ├── auth.py          # Register / login / current user
+│   │   └── intervals.py     # Interval normalisation helpers
 │   ├── engine/              # Detection algorithms
 │   │   ├── bos.py           # Break of Structure
 │   │   ├── fvg.py           # Fair Value Gaps
@@ -39,8 +41,12 @@ graewatch/
 │   │   └── ...
 │   ├── utils/
 │   │   ├── precision.py     # Decimal ↔ float conversion
-│   │   └── audit.py         # Logging & performance tracking
-│   └── tests/               # Unit tests (pytest)
+│   │   ├── audit.py         # Logging & performance tracking
+│   │   └── auth.py          # JWT + bcrypt helpers
+│   ├── eval/                # Walk-forward backtest & perf scripts
+│   │   ├── run_backtest.py  # Trade-by-trade evaluation harness
+│   │   └── run_perf.py      # Engine timing benchmarks
+│   └── tests/               # Unit & route tests (pytest)
 └── .env                     # Environment variables (not committed)
 ```
 
@@ -48,9 +54,10 @@ graewatch/
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, [lightweight-charts](https://github.com/nicedoc/lightweight-charts) (TradingView) |
+| Frontend | React 19, Vite, [lightweight-charts](https://github.com/tradingview/lightweight-charts) (TradingView) |
 | Backend | FastAPI, Motor (async MongoDB driver), HTTPX |
 | Database | MongoDB |
+| Auth | JWT (PyJWT) + bcrypt password hashing |
 | Data Source | [TwelveData API](https://twelvedata.com/) |
 
 ## Getting Started
@@ -69,6 +76,7 @@ graewatch/
 ```
 TWELVE_DATA_API_KEY=your_api_key_here
 MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=any_long_random_string
 ```
 
 2. Start the backend:
@@ -99,7 +107,19 @@ source .venv/bin/activate
 python -m pytest -v
 ```
 
-70 unit tests cover the core detection engines (BOS, FVG, Gann, Liquidity, Order Blocks).
+The pytest suite covers detection engines (BOS, FVG, Gann, Liquidity, Order Blocks, Wyckoff, Setup, Confluence), zone scoring/clustering/adapters, interval normalisation, decimal precision, and the auth + snapshots routes.
+
+### Evaluation Scripts
+
+Reproducible scripts used for the dissertation evaluation chapter live under `server/eval/`:
+
+```bash
+cd server
+python eval/run_backtest.py                 # walk-forward backtest, JSON + per-trade CSVs
+python eval/run_perf.py                     # per-engine timing benchmarks
+```
+
+Outputs are written to `server/eval/results/`.
 
 ## Features
 
@@ -166,6 +186,13 @@ All detection engines use `decimal.Decimal` for calculations. A conversion bound
 - Engine-level timing for algorithm performance
 - Events persisted to `audit_logs` collection with 30-day TTL
 
+### Authentication
+
+- Email + password registration with bcrypt-hashed credentials
+- JWT bearer tokens issued on login, verified on protected routes (`/api/snapshots`, `/api/auth/me`)
+- Frontend gates the dashboard behind an `AuthScreen` until a valid session is established
+- Per-user snapshots scoped via `user_id` on every read/write
+
 ## Architecture
 
 ```
@@ -208,8 +235,11 @@ See [API.md](API.md) for the complete endpoint reference.
 | `/api/analysis/{component}` | GET | Run a detection engine |
 | `/api/setup` | GET | Detect trade setup (Entry/Target/Stop/R:R) |
 | `/api/confluence` | GET | Multi-TF confluence zone scoring |
-| `/api/snapshots` | GET | List saved snapshots |
-| `/api/snapshots` | POST | Save a new snapshot |
-| `/api/snapshots/{id}` | PATCH | Update snapshot outcome/notes |
-| `/api/snapshots/{id}` | DELETE | Delete a snapshot |
+| `/api/snapshots` | GET | List saved snapshots (auth) |
+| `/api/snapshots` | POST | Save a new snapshot (auth) |
+| `/api/snapshots/{id}` | PATCH | Update snapshot outcome/notes (auth) |
+| `/api/snapshots/{id}` | DELETE | Delete a snapshot (auth) |
+| `/api/auth/register` | POST | Create an account, returns JWT |
+| `/api/auth/login` | POST | Authenticate, returns JWT |
+| `/api/auth/me` | GET | Current user profile (auth) |
 | `/api/health` | GET | Health check |
