@@ -108,3 +108,53 @@ Please regularly update this file to record your project progress. You should be
   - Removed `zones` and `wyckoff` stub engines from the `COMPONENTS` registry (stub files retained for future implementation)
   - Moved all 7 chart primitive files into `client/src/components/primitives/` subfolder
   - Created `.env.example` documenting required environment variables
+
+
+# Session 13:
+- Implemented Wyckoff analysis engine, fleshing out the previously stubbed component
+- Built initial unit test suite covering both the frontend (React components) and backend (FastAPI routes/engines)
+- Remodelled the prediction engine output to better reflect confluence and confidence
+- Fixed bug where indicators were rendered even when no selection range had been made
+- Adjusted order block colours for clearer bullish/bearish distinction
+
+
+# Session 14:
+- Reworked zone detection logic and unified the "zones" and "setup" flows into a single area
+- Refined order block mitigation step handling
+- Locked SMC checklist steps until a selection range is made (prevents premature analysis)
+- Fixed chart flicker, reset button bug, and chart pair/interval selector issues
+- General bug fixes around zone updaters and chart redrawing
+
+
+# Session 15:
+- Built the **save snapshot** feature — users can capture and store their current chart state with overlays for later review
+- Added screenshot/PNG generation for snapshots with toggleable open/close display
+- Introduced **simulation history** view to browse past snapshots
+- Fixed entry zone rendering, box persistence across reloads, and incorrect section selection bugs
+- Updated prediction card layout and confidence level display
+- Fixed lingering liquidity sweep rendering issues
+- Corrected the order block drawing method
+
+
+# Session 16:
+- Implemented **user accounts and secure authentication** (registration, login, session management)
+- Added security hardening pass (input validation, auth middleware, etc.)
+- Built audit trail / logging system for dissertation debugging and traceability
+- Implemented **data persistence** so user snapshots, history, and selections survive across sessions
+- Migrated all tutorial / static UI copy into a centralised JSON file consumed by React components
+- Addressed non-functional requirements: input normalisation, tutorial onboarding flow
+- Removed dead code uncovered during the refactor
+
+
+# Session 17:
+- Major test expansion: added engine test cases for adapters, scoring, clusters, and signals
+- Added route snapshot, interval, and precision utility tests
+- Finalised the full test suite and resolved outstanding test failures
+- Large-scale code cleanup and review pass across the codebase
+- Ran linter and formatter to standardise code structure project-wide
+
+
+# Session 18:
+- Built evaluation metric generation scripts for measuring prediction engine performance
+- Added evaluation harness scripts for batch-running analysis across historical data
+- Updated README documentation ahead of project submission
