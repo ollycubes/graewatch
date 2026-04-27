@@ -219,6 +219,27 @@ function deriveOverlays(currentStep) {
   };
 }
 
+// Union overlays across a set of step ids — once an overlay is enabled by a
+// completed step, it stays on as later steps add their own.
+function mergeOverlaysForSteps(stepIds) {
+  const merged = {
+    bos: false,
+    fvg: false,
+    gann: false,
+    orderblocks: false,
+    liquidity: false,
+    wyckoff: false,
+  };
+  for (const id of stepIds) {
+    const stepDef = CHECKLIST_STEPS[id];
+    if (!stepDef) continue;
+    for (const [key, value] of Object.entries(stepDef.overlays || {})) {
+      if (value) merged[key] = true;
+    }
+  }
+  return merged;
+}
+
 // Derive the chart interval from the current step
 function deriveInterval(currentStep, currentInterval) {
   const stepDef = CHECKLIST_STEPS[currentStep];
@@ -280,7 +301,11 @@ export function dashboardReducer(state, action) {
         : [...state.checklist.completedSteps, current];
 
       // Only derive overlays when a selection is active; otherwise keep them off.
-      const newOverlays = state.selection ? deriveOverlays(nextStep) : initialState.overlays;
+      // Merge overlays across all completed steps and the new current step so
+      // indicators enabled earlier in the walkthrough stay on.
+      const newOverlays = state.selection
+        ? mergeOverlaysForSteps([...newCompleted, nextStep])
+        : initialState.overlays;
       const newInterval = deriveInterval(nextStep, state.interval);
 
       return {
@@ -304,7 +329,10 @@ export function dashboardReducer(state, action) {
       if (!isAllowed) return state;
 
       // Only derive overlays when a selection is active; otherwise keep them off.
-      const newOverlays = state.selection ? deriveOverlays(targetStep) : initialState.overlays;
+      // Merge overlays across all completed steps and the target step.
+      const newOverlays = state.selection
+        ? mergeOverlaysForSteps([...state.checklist.completedSteps, targetStep])
+        : initialState.overlays;
       const newInterval = deriveInterval(targetStep, state.interval);
 
       return {
@@ -324,7 +352,7 @@ export function dashboardReducer(state, action) {
       // because the selection is the anchor for the entire top-down analysis.
       return {
         ...state,
-        interval: 'weekly',
+        interval: 'daily',
         overlays: initialState.overlays,
         selection: null,
         checklist: {
